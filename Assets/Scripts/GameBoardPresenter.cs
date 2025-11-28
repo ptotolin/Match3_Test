@@ -72,7 +72,7 @@ public class GameBoardPresenter : MonoBehaviour
         }
 
         var gemViewPrefab = gemInfo.GemView;
-        var gemView = Instantiate(gemViewPrefab, new Vector2(pos.x, pos.y + SC_GameVariables.Instance.dropHeight), Quaternion.identity);
+        var gemView = Instantiate(gemViewPrefab, new Vector2(pos.x, pos.y /*+ SC_GameVariables.Instance.dropHeight*/), Quaternion.identity);
         gemView.transform.SetParent(gemsHolder);
         gemView.name = "Gem - " + pos.x + ", " + pos.y;
 
