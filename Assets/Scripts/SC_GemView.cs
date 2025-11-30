@@ -22,7 +22,5 @@ public class SC_GemView : MonoBehaviour
     {
         var destroyEffect = Instantiate(destroyEffectPrefab, cachedTransform.position, Quaternion.identity);
         Destroy(destroyEffect.gameObject, 1);
-        
-        Destroy(gameObject);
     }
 }

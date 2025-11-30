@@ -4,6 +4,9 @@ using UnityEngine;
 
 public class SC_GameVariables : MonoBehaviour
 {
+    public float BlockSize = 1.0f;
+
+    public float BlockSpeed = 2;
     public GameObject bgTilePrefabs;
     public SC_Gem bomb;
     public List<GemInfo> GemsInfo;

@@ -8,6 +8,7 @@ public class GemInputHandler : MonoBehaviour
     // dependencies
     //private SC_GameLogic scGameLogic;
     private GameBoard gameboard;
+    private GameBoardPresenter gameBoardPresenter;
     
     // locals
     private Vector2 firstTouchPosition;
@@ -19,9 +20,10 @@ public class GemInputHandler : MonoBehaviour
     private SC_Gem firstTouchGem;
     
 
-    public void Initialize(GameBoard gameboard)
+    public void Initialize(GameBoard gameboard, GameBoardPresenter gameBoardPresenter)
     {
         this.gameboard = gameboard;
+        this.gameBoardPresenter = gameBoardPresenter;
         
         mainCamera = Camera.main;
         initialized = true;
@@ -58,9 +60,10 @@ public class GemInputHandler : MonoBehaviour
             
         if (hit.collider != null)
         {
-            var gem = hit.collider.GetComponent<SC_Gem>();
-            if (gem != null)
-            {
+            var gemView = hit.collider.GetComponent<SC_GemView>();
+            if (gemView != null) {
+                
+                var gem = gameBoardPresenter.GetGemByView(gemView);
                 return gem;
             }
         }
@@ -82,6 +85,10 @@ public class GemInputHandler : MonoBehaviour
             return;
         }
 
+        if (gameBoardPresenter.CurrentState == GlobalEnums.GameState.wait) {
+            return;
+        }
+        
         if (swipeAngle is < 45 and > -45 && firstGemPos.x < SC_GameVariables.Instance.rowsSize - 1)
         {
             EventSwipeDetected?.Invoke(firstGemPos, new Vector2Int(firstGemPos.x + 1, firstGemPos.y));

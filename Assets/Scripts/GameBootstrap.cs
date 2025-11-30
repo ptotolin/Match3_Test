@@ -1,3 +1,4 @@
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class GameBootstrap : MonoBehaviour
@@ -21,17 +22,20 @@ public class GameBootstrap : MonoBehaviour
         gameBoard = new GameBoard(width, height);
         GameBoardSetup();
         
-        gemInputHandler = Instantiate(gemInputHandlerPrefab);
-        gemInputHandler.gameObject.name = "Input handler";
-        gemInputHandler.Initialize(gameBoard);
-        
+        // Create phase
         gameLogic = Instantiate(gameLogicPrefab);
         gameLogic.gameObject.name = "Game Logic";
-        gameLogic.Initialize(gemInputHandler, gameBoard);
-
+        
+        gemInputHandler = Instantiate(gemInputHandlerPrefab);
+        gemInputHandler.gameObject.name = "Input handler";
+        
         gameBoardPresenter = Instantiate(gameBoardPresenterPrefab);
         gameBoardPresenter.gameObject.name = "GameBoard Presenter";
+        
+        // Initialize phase
+        gameLogic.Initialize(gemInputHandler, gameBoard);
         gameBoardPresenter.Initialize(gameBoard);
+        gemInputHandler.Initialize(gameBoard, gameBoardPresenter);
     }
     
     private void GameBoardSetup()
@@ -40,7 +44,7 @@ public class GameBootstrap : MonoBehaviour
         for (int y = 0; y < gameBoard.Height; y++) {
             // TODO: Remove that from here 
             if (Random.Range(0, 100f) < SC_GameVariables.Instance.bombChance) {
-                gameBoard.SetGem(x, y, SC_GameVariables.Instance.bomb);
+                gameBoard.SetGem(x, y, SC_GameVariables.Instance.bomb.Clone(), GlobalEnums.GemSpawnType.Instant);
             }
             else {
                 int gemToUse = Random.Range(0, SC_GameVariables.Instance.GemsInfo.Count);
@@ -52,7 +56,7 @@ public class GameBootstrap : MonoBehaviour
                     iterations++;
                 }
 
-                gameBoard.SetGem(x, y, SC_GameVariables.Instance.GemsInfo[gemToUse].Gem.Clone());
+                gameBoard.SetGem(x, y, SC_GameVariables.Instance.GemsInfo[gemToUse].Gem.Clone(), GlobalEnums.GemSpawnType.Instant);
             }
         }
     }

@@ -601,6 +601,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3b3b891bcdf21df4ab82ea34c3afc99e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  BlockSize: 1
+  BlockSpeed: 6
   bgTilePrefabs: {fileID: 2914066502361773997, guid: 3f39182b81f944a4d93213431acb41c3,
     type: 3}
   bomb:

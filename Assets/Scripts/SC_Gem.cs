@@ -24,4 +24,9 @@ public class SC_Gem
     {
         return new SC_Gem(type, ScoreValue);
     }
+
+    public override string ToString()
+    {
+        return type.ToString();
+    }
 }

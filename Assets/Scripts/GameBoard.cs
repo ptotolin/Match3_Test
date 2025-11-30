@@ -1,13 +1,14 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
 public class GameBoard
 {
+    public event Action<Vector2Int, Vector2Int, SC_Gem, SC_Gem> EventGemsSwapped;
     public event Action<Vector2Int, Vector2Int> EventGemMoved;
     public event Action<Vector2Int> EventGemDestroy;
+    public event Action<Vector2Int, GlobalEnums.GemSpawnType> EventGemSpawned;
     
     // locals
     private int height = 0;
@@ -53,19 +54,33 @@ public class GameBoard
         return false;
     }
 
-    public void MoveGem(Vector2Int fromPos, Vector2Int toPos)
+    public void SwapGems(Vector2Int fromPos, Vector2Int toPos)
     {
+        // Сохраняем гемы ДО swap
+        var gemFrom = allGems[fromPos.x, fromPos.y];
+        var gemTo = allGems[toPos.x, toPos.y];
+        
+        EventGemsSwapped?.Invoke(fromPos, toPos, gemFrom, gemTo);
+
         (allGems[fromPos.x, fromPos.y], allGems[toPos.x, toPos.y]) = 
             (allGems[toPos.x, toPos.y], allGems[fromPos.x, fromPos.y]);
-        
+    }
+
+    public void MoveGem(Vector2Int fromPos, Vector2Int toPos)
+    {
         EventGemMoved?.Invoke(fromPos, toPos);
+
+        var gem = allGems[fromPos.x, fromPos.y];
+    
+        allGems[fromPos.x, fromPos.y] = null;
+        allGems[toPos.x, toPos.y] = gem;
     }
 
     public void DestroyGem(Vector2Int gemPos)
     {
-        allGems[gemPos.x, gemPos.y] = null;
-        
         EventGemDestroy?.Invoke(gemPos);
+
+        allGems[gemPos.x, gemPos.y] = null;
     }
     
     public bool MatchesAt(Vector2Int _PositionToCheck, SC_Gem _GemToCheck)
@@ -87,10 +102,15 @@ public class GameBoard
         return false;
     }
 
-    public void SetGem(int _X, int _Y, SC_Gem _Gem)
+    public void SetGem(int x, int y, SC_Gem gem, GlobalEnums.GemSpawnType gemSpawnType)
     {
-        allGems[_X, _Y] = _Gem;
+        allGems[x, y] = gem;
+
+        if (gem != null) {
+            EventGemSpawned?.Invoke(new Vector2Int(x, y), gemSpawnType);
+        }
     }
+    
     public SC_Gem GetGem(int _X,int _Y)
     {
        return allGems[_X, _Y];
