@@ -27,7 +27,15 @@ public class DestroyGemCommand : IGameBoardCommand
         await gemView.ShowDestroyEffect();
         
         gameBoardPresenter.UnregisterGemViewByView(gemView);
+
+        var pooledObject = gemView.GetComponent<PooledObject>();
+        if (pooledObject != null) {
+            pooledObject.Despawn();
+        }
+        else {
+            Debug.LogWarning($"Object {gemView.gameObject.name} is not pooled (doesn't have PooledObject component)");
+            GameObject.Destroy(gemView.gameObject);
+        }
         
-        GameObject.Destroy(gemView.gameObject);
     }
 }

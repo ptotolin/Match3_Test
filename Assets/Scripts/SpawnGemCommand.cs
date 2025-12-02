@@ -46,7 +46,8 @@ public class SpawnGemCommand : IGameBoardCommand
     
     public async Task ExecuteAsync()
     {
-        var gemView = GameObject.Instantiate(gemViewPrefab, gemViewPos, Quaternion.identity);
+        //var gemView = GameObject.Instantiate(gemViewPrefab, gemViewPos, Quaternion.identity);
+        var gemView = ObjectPool.Instance.Spawn<SC_GemView>(gemViewPrefab.gameObject, gemViewPos, Quaternion.identity);
         gemView.transform.SetParent(gemsHolder);
         gemView.name = "Gem - " + gemPos.x + ", " + gemPos.y;
         gameBoardPresenter.RegisterGemView(gem, gemView);

@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 7667143225876670884}
   - component: {fileID: -4313073739878660840}
   - component: {fileID: 2259138850248276554}
+  - component: {fileID: -8717178017407388172}
   m_Layer: 0
   m_Name: Gem - Blue
   m_TagString: Untagged
@@ -127,3 +128,15 @@ MonoBehaviour:
   type: 0
   destroyEffectPrefab: {fileID: 8904178830182364799, guid: d794be08823edd34da1790efd1739074,
     type: 3}
+--- !u!114 &-8717178017407388172
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7667143225876670874}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac15b991f402a45e4bc7502bfe319927, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
