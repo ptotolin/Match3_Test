@@ -9,6 +9,8 @@ public class GameBoard
     public event Action<Vector2Int, Vector2Int> EventGemMoved;
     public event Action<Vector2Int> EventGemDestroy;
     public event Action<Vector2Int, GlobalEnums.GemSpawnType> EventGemSpawned;
+    public event Action EventBatchOperationStarted;
+    public event Action EventBatchOperationEnded;
     
     // locals
     private int height = 0;
@@ -60,7 +62,9 @@ public class GameBoard
         var gemFrom = allGems[fromPos.x, fromPos.y];
         var gemTo = allGems[toPos.x, toPos.y];
         
+        EventBatchOperationStarted?.Invoke();
         EventGemsSwapped?.Invoke(fromPos, toPos, gemFrom, gemTo);
+        EventBatchOperationEnded?.Invoke();
 
         (allGems[fromPos.x, fromPos.y], allGems[toPos.x, toPos.y]) = 
             (allGems[toPos.x, toPos.y], allGems[fromPos.x, fromPos.y]);
@@ -228,6 +232,16 @@ public class GameBoard
             }
         }
         currentMatches = currentMatches.Distinct().ToList();
+    }
+
+    public void InvokeBatchStart()
+    {
+        EventBatchOperationStarted?.Invoke();
+    }
+
+    public void InvokeBatchEnd()
+    {
+        EventBatchOperationEnded?.Invoke();
     }
 }
 

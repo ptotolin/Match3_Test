@@ -39,12 +39,12 @@ public class MoveGemCommand : IGameBoardCommand
     
     public async Task ExecuteAsync()
     {
+        Debug.Log($"===== Started executing ======");
         var destinationPoint = cellModelToWorldConverter.Convert(destPos);
         var timer = 0.0f;
         var gemView = gameBoardPresenter.GetGemView(gem);
         var gemViewTransform = gemView.transform;
         Vector2 startPos = gemViewTransform.position;
-        Debug.Log($"[MoveGemCommand] gem: {gem} startPos: {startPos} destPos: {destPos}");
         var moveVec = destinationPoint - startPos;
         var duration = (moveVec.magnitude / blockSize) / blocksPerSecondSpeed;
         while (timer < duration) {
@@ -53,6 +53,7 @@ public class MoveGemCommand : IGameBoardCommand
             gemViewTransform.position = startPos + normalizedTime * moveVec;
             await Task.Yield();
         }
+        Debug.Log($"===== Ended executing ======");
 
         gemViewTransform.position = destinationPoint;
         

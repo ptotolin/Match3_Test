@@ -3,17 +3,19 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
+
 public class GameBoardPresenter : MonoBehaviour
 {
     [SerializeField] private Transform gemsHolder;
     
     // dependencies
     private GameBoard gameboard;
+    private GameBoardEventsAdapter gameBoardEventsAdapter;
     
     // locals
     private Dictionary<SC_Gem, SC_GemView> gemViewsDict = new();
     private ICellModelToWorldConverter cellModelToWorldConverter;
-    private GameBoardCommandsExecutor gameBoardCommandsExecutor;
+    //private GameBoardCommandsExecutor gameBoardCommandsExecutor;
     private GlobalEnums.GameState currentState = GlobalEnums.GameState.move;
     
     // properties
@@ -24,22 +26,30 @@ public class GameBoardPresenter : MonoBehaviour
         UnsubscribeFromEvents();
     }
 
-    public void Initialize(GameBoard gameboard)
+    public void Initialize(GameBoard gameboard, GameBoardEventsAdapter gameBoardEventsAdapter)
     {
         this.gameboard = gameboard;
+        this.gameBoardEventsAdapter = gameBoardEventsAdapter;
 
         cellModelToWorldConverter = new CellModelToWorldConverter();
-        gameBoardCommandsExecutor = new GameBoardCommandsExecutor();
+        //gameBoardCommandsExecutor = new GameBoardCommandsExecutor();
+        SubscribeToEvents();
         
+        gameboard.InvokeBatchStart();
         for (var x = 0; x < this.gameboard.Width; ++x) {
             for (var y = 0; y < this.gameboard.Height; ++y) {
                 var gem = this.gameboard.GetGem(x, y);
                 var spawnGemCommand = new SpawnGemCommand(new Vector2Int(x, y), gem, gemsHolder, cellModelToWorldConverter, this);
-                gameBoardCommandsExecutor.AddCommand(spawnGemCommand);
+                //gameBoardCommandsExecutor.AddCommand(spawnGemCommand);
+                gameBoardEventsAdapter.AddGlobalCommand(spawnGemCommand);
             }
         }
         
-        SubscribeToEvents();
+        gameboard.InvokeBatchEnd();
+
+        //gameBoardEventsAdapter.FlushCommands();
+        
+        
     }
 
     public void RegisterGemView(SC_Gem gem, SC_GemView gemView)
@@ -57,12 +67,12 @@ public class GameBoardPresenter : MonoBehaviour
         var rec = gemViewsDict.First(t => t.Value == gemView);
         
         // -- DEBUG
-        if (gameboard.TryGetGemPos(rec.Key, out var pos)) {
-            Debug.Log($"Unregister gem at pos: {pos}");
-        }
-        else {
-            Debug.Log($"CAN'T FIND gem {rec.Key}. View at position: {gemView.transform.position}");
-        }
+        // if (gameboard.TryGetGemPos(rec.Key, out var pos)) {
+        //     Debug.Log($"Unregister gem at pos: {pos}");
+        // }
+        // else {
+        //     Debug.Log($"CAN'T FIND gem {rec.Key}. View at position: {gemView.transform.position}");
+        // }
         // -- END 
         
         gemViewsDict.Remove(rec.Key);
@@ -88,7 +98,8 @@ public class GameBoardPresenter : MonoBehaviour
         Debug.Log($"Destroy gem {curGem} at {_Pos}");
 
         var destroyGemCommand = new DestroyGemCommand(this, curGem);
-        gameBoardCommandsExecutor.AddCommand(destroyGemCommand);
+        //gameBoardCommandsExecutor.AddCommand(destroyGemCommand);
+        gameBoardEventsAdapter.AddGlobalCommand(destroyGemCommand);
     }
     
     private void OnGemMoved(Vector2Int fromPos, Vector2Int toPos)
@@ -98,7 +109,8 @@ public class GameBoardPresenter : MonoBehaviour
         var gem = gameboard.GetGem(fromPos.x, fromPos.y);
         
         var moveCommand = new MoveGemCommand(gem, toPos, SC_GameVariables.Instance.BlockSpeed, cellModelToWorldConverter, this);
-        gameBoardCommandsExecutor.AddCommand(moveCommand);
+        //gameBoardCommandsExecutor.AddCommand(moveCommand);
+        gameBoardEventsAdapter.AddColumnCommand(moveCommand, fromPos.x);
     }
 
     private void OnGemsSwapped(Vector2Int gem1Pos, Vector2Int gem2Pos, SC_Gem gem1, SC_Gem gem2)
@@ -109,7 +121,8 @@ public class GameBoardPresenter : MonoBehaviour
         // var gem2 = gameboard.GetGem(gem2Pos.x, gem2Pos.y);
 
         var swapGemCommand = new SwapGemsCommand(gem1, gem2, gem1Pos, gem2Pos, cellModelToWorldConverter, this);
-        gameBoardCommandsExecutor.AddCommand(swapGemCommand);
+        //gameBoardCommandsExecutor.AddCommand(swapGemCommand);
+        gameBoardEventsAdapter.AddGlobalCommand(swapGemCommand);
 
         currentState = GlobalEnums.GameState.wait;
 
@@ -140,7 +153,7 @@ public class GameBoardPresenter : MonoBehaviour
     {
         var gem = gameboard.GetGem(gemPos.x, gemPos.y);
         var spawnGemCommand = new SpawnGemCommand(gemPos, gem, gemsHolder, cellModelToWorldConverter, this);
-        gameBoardCommandsExecutor.AddCommand(spawnGemCommand);
+        gameBoardEventsAdapter.AddColumnCommand(spawnGemCommand, gemPos.x);
     }
 
     private void SpawnGemFallFromTop(Vector2Int gemPos)
@@ -148,8 +161,8 @@ public class GameBoardPresenter : MonoBehaviour
         var gem = gameboard.GetGem(gemPos.x, gemPos.y);
         var spawnGemCommand = new SpawnGemCommand(new Vector2Int(gemPos.x, gameboard.Height), gem, gemsHolder, cellModelToWorldConverter, this);
         var moveCommand = new MoveGemCommand(gem, gemPos, SC_GameVariables.Instance.BlockSpeed, cellModelToWorldConverter, this);
-        gameBoardCommandsExecutor.AddCommand(spawnGemCommand);
-        gameBoardCommandsExecutor.AddCommand(moveCommand);
+        gameBoardEventsAdapter.AddColumnCommand(spawnGemCommand, gemPos.x);
+        gameBoardEventsAdapter.AddColumnCommand(moveCommand, gemPos.x);
     }
     
     private void OnGemDestroy(Vector2Int gemPos)
@@ -164,7 +177,8 @@ public class GameBoardPresenter : MonoBehaviour
         gameboard.EventGemDestroy += OnGemDestroy;
         gameboard.EventGemSpawned += OnGemSpawned;
 
-        gameBoardCommandsExecutor.EventLastCommandExecuted += OnLastCommandExecuted;
+        //gameBoardCommandsExecutor.EventLastCommandExecuted += OnLastCommandExecuted;
+        gameBoardEventsAdapter.EventLastCommandExecuted += OnLastCommandExecuted;
     }
 
     private void UnsubscribeFromEvents()
@@ -174,6 +188,8 @@ public class GameBoardPresenter : MonoBehaviour
         gameboard.EventGemDestroy -= OnGemDestroy;
         gameboard.EventGemSpawned -= OnGemSpawned;
         
-        gameBoardCommandsExecutor.EventLastCommandExecuted -= OnLastCommandExecuted;
+        //gameBoardCommandsExecutor.EventLastCommandExecuted -= OnLastCommandExecuted;
+        gameBoardEventsAdapter.EventLastCommandExecuted -= OnLastCommandExecuted;
+
     }
 }

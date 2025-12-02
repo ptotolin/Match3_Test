@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections;
-using UnityEngine;
+﻿using UnityEngine;
 using Random = UnityEngine.Random;
 
 public class SC_GameLogic : MonoBehaviour
@@ -81,14 +79,16 @@ public class SC_GameLogic : MonoBehaviour
     private void CheckMoveCo(SC_Gem gem1, SC_Gem gem2, Vector2Int gem1Pos, Vector2Int gem2Pos)
     {
         FindAllMatches();
-
+        
         if (gem1 != null && gem2 != null)
         {
             if (!gem1.IsMatch && !gem2.IsMatch)
             {
                 Debug.Log($"[Client] Swap back ({gem1Pos}, {gem2Pos})");
+                gameBoard.InvokeBatchStart();
                 // swap back
                 gameBoard.SwapGems(gem2Pos, gem1Pos);
+                gameBoard.InvokeBatchEnd();
             }
             else 
             {
@@ -100,6 +100,7 @@ public class SC_GameLogic : MonoBehaviour
     
     private void DestroyMatches()
     {
+        gameBoard.InvokeBatchStart();
         // TODO: We may form matches here like Match3, Match4, Match5
         Debug.Log($"<color=white>Matches count:{gameBoard.CurrentMatches.Count}</color>");
         foreach (var match in gameBoard.CurrentMatches) {
@@ -117,12 +118,15 @@ public class SC_GameLogic : MonoBehaviour
                 }
             }
         }
-
+        gameBoard.InvokeBatchEnd();
+        
         DecreaseRowCo();
+        
     }
     
     private void DecreaseRowCo()
     {
+        gameBoard.InvokeBatchStart();
         var nullCounter = 0;
         for (var x = 0; x < gameBoard.Width; x++)
         {
@@ -140,6 +144,7 @@ public class SC_GameLogic : MonoBehaviour
             }
             nullCounter = 0;
         }
+        gameBoard.InvokeBatchEnd();
 
         // TODO: Fillboard command ? 
         FilledBoardCo();
@@ -147,7 +152,10 @@ public class SC_GameLogic : MonoBehaviour
 
     private void FilledBoardCo()
     {
+        gameBoard.InvokeBatchStart();
         RefillBoard();
+        gameBoard.InvokeBatchEnd();
+        
         gameBoard.FindAllMatches();
         if (gameBoard.CurrentMatches.Count > 0) {
             DestroyMatches();

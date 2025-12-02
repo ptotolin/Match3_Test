@@ -16,6 +16,7 @@ public class GameBootstrap : MonoBehaviour
     private GemInputHandler gemInputHandler;
     private GameBoardPresenter gameBoardPresenter;
     private GameBoard gameBoard;
+    private GameBoardEventsAdapter gameBoardEventsAdapter;
 
     private void Awake()
     {
@@ -31,10 +32,12 @@ public class GameBootstrap : MonoBehaviour
         
         gameBoardPresenter = Instantiate(gameBoardPresenterPrefab);
         gameBoardPresenter.gameObject.name = "GameBoard Presenter";
+
+        gameBoardEventsAdapter = new GameBoardEventsAdapter(gameBoard);
         
         // Initialize phase
         gameLogic.Initialize(gemInputHandler, gameBoard);
-        gameBoardPresenter.Initialize(gameBoard);
+        gameBoardPresenter.Initialize(gameBoard, gameBoardEventsAdapter);
         gemInputHandler.Initialize(gameBoard, gameBoardPresenter);
     }
     
