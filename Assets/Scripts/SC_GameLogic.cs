@@ -6,6 +6,7 @@ public class SC_GameLogic : MonoBehaviour
     // dependencies
     private GemInputHandler gemInputHandler;
     private GameBoard gameBoard;
+    private IGemGenerator gemGenerator;
 
     // locals
     private int score = 0;
@@ -33,11 +34,12 @@ public class SC_GameLogic : MonoBehaviour
         StartGame();
     }
 
-    public void Initialize(GemInputHandler gemInputHandler, GameBoard gameBoard)
+    public void Initialize(GemInputHandler gemInputHandler, GameBoard gameBoard, IGemGenerator gemGenerator)
     {
         this.gemInputHandler = gemInputHandler;
         this.gemInputHandler.EventSwipeDetected += OnSwipe;
         this.gameBoard = gameBoard;
+        this.gemGenerator = gemGenerator;
     }
 
     // private void Update()
@@ -168,10 +170,9 @@ public class SC_GameLogic : MonoBehaviour
             for (int y = 0; y < gameBoard.Height; y++)
             {
                 SC_Gem _curGem = gameBoard.GetGem(x,y);
-                if (_curGem == null)
-                {
-                    int gemToUse = Random.Range(0, SC_GameVariables.Instance.GemsInfo.Count);
-                    gameBoard.SetGem(x, y, SC_GameVariables.Instance.GemsInfo[gemToUse].Gem.Clone(), GlobalEnums.GemSpawnType.FallFromTop);
+                if (_curGem == null) {
+                    var newGem = gemGenerator.GenerateGem(new Vector2Int(x, y));
+                    gameBoard.SetGem(x, y, newGem, GlobalEnums.GemSpawnType.FallFromTop);
                 }
             }
         }

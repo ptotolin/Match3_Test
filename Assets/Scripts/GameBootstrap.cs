@@ -1,4 +1,3 @@
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class GameBootstrap : MonoBehaviour
@@ -21,7 +20,8 @@ public class GameBootstrap : MonoBehaviour
     private void Awake()
     {
         gameBoard = new GameBoard(width, height);
-        GameBoardSetup();
+        var gemGenerator = new DistinctGemGenerator(gameBoard);
+        GameBoardSetup(gemGenerator);
         
         // Create phase
         gameLogic = Instantiate(gameLogicPrefab);
@@ -36,31 +36,26 @@ public class GameBootstrap : MonoBehaviour
         gameBoardEventsAdapter = new GameBoardEventsAdapter(gameBoard);
         
         // Initialize phase
-        gameLogic.Initialize(gemInputHandler, gameBoard);
+        gameLogic.Initialize(gemInputHandler, gameBoard, gemGenerator);
         gameBoardPresenter.Initialize(gameBoard, gameBoardEventsAdapter);
         gemInputHandler.Initialize(gameBoard, gameBoardPresenter);
     }
-    
-    private void GameBoardSetup()
+
+    private void GameBoardSetup(IGemGenerator gemGenerator)
     {
         for (int x = 0; x < gameBoard.Width; x++)
         for (int y = 0; y < gameBoard.Height; y++) {
             // TODO: Remove that from here 
-            if (Random.Range(0, 100f) < SC_GameVariables.Instance.bombChance) {
-                gameBoard.SetGem(x, y, SC_GameVariables.Instance.bomb.Clone(), GlobalEnums.GemSpawnType.Instant);
-            }
-            else {
-                int gemToUse = Random.Range(0, SC_GameVariables.Instance.GemsInfo.Count);
+            var gem = gemGenerator.GenerateGem(new Vector2Int(x, y));
 
-                int iterations = 0;
-                while (gameBoard.MatchesAt(new Vector2Int(x, y), SC_GameVariables.Instance.GemsInfo[gemToUse].Gem) &&
-                       iterations < 100) {
-                    gemToUse = Random.Range(0, SC_GameVariables.Instance.GemsInfo.Count);
-                    iterations++;
-                }
-
-                gameBoard.SetGem(x, y, SC_GameVariables.Instance.GemsInfo[gemToUse].Gem.Clone(), GlobalEnums.GemSpawnType.Instant);
+            int iterations = 0;
+            while (gameBoard.MatchesAt(new Vector2Int(x, y), gem) &&
+                   iterations < 100) {
+                gem = gemGenerator.GenerateGem(new Vector2Int(x, y));
+                iterations++;
             }
+
+            gameBoard.SetGem(x, y, gem, GlobalEnums.GemSpawnType.Instant);
         }
     }
 }
