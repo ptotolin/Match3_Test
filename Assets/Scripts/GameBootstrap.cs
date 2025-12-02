@@ -16,11 +16,13 @@ public class GameBootstrap : MonoBehaviour
     private GameBoardPresenter gameBoardPresenter;
     private GameBoard gameBoard;
     private GameBoardEventsAdapter gameBoardEventsAdapter;
+    private MatchDetector matchDetector;
 
     private void Awake()
     {
         gameBoard = new GameBoard(width, height);
         var gemGenerator = new DistinctGemGenerator(gameBoard);
+        matchDetector = new MatchDetector(gameBoard);
         GameBoardSetup(gemGenerator);
         
         // Create phase
@@ -36,7 +38,7 @@ public class GameBootstrap : MonoBehaviour
         gameBoardEventsAdapter = new GameBoardEventsAdapter(gameBoard);
         
         // Initialize phase
-        gameLogic.Initialize(gemInputHandler, gameBoard, gemGenerator);
+        gameLogic.Initialize(gemInputHandler, gameBoard, gemGenerator, matchDetector);
         gameBoardPresenter.Initialize(gameBoard, gameBoardEventsAdapter);
         gemInputHandler.Initialize(gameBoard, gameBoardPresenter);
     }
@@ -49,7 +51,7 @@ public class GameBootstrap : MonoBehaviour
             var gem = gemGenerator.GenerateGem(new Vector2Int(x, y));
 
             int iterations = 0;
-            while (gameBoard.MatchesAt(new Vector2Int(x, y), gem) &&
+            while (matchDetector.MatchesAt(new Vector2Int(x, y), gem) &&
                    iterations < 100) {
                 gem = gemGenerator.GenerateGem(new Vector2Int(x, y));
                 iterations++;

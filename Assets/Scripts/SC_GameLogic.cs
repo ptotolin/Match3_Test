@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using Random = UnityEngine.Random;
 
 public class SC_GameLogic : MonoBehaviour
 {
@@ -7,6 +6,7 @@ public class SC_GameLogic : MonoBehaviour
     private GemInputHandler gemInputHandler;
     private GameBoard gameBoard;
     private IGemGenerator gemGenerator;
+    private MatchDetector matchDetector;
 
     // locals
     private int score = 0;
@@ -34,12 +34,13 @@ public class SC_GameLogic : MonoBehaviour
         StartGame();
     }
 
-    public void Initialize(GemInputHandler gemInputHandler, GameBoard gameBoard, IGemGenerator gemGenerator)
+    public void Initialize(GemInputHandler gemInputHandler, GameBoard gameBoard, IGemGenerator gemGenerator, MatchDetector matchDetector)
     {
         this.gemInputHandler = gemInputHandler;
         this.gemInputHandler.EventSwipeDetected += OnSwipe;
         this.gameBoard = gameBoard;
         this.gemGenerator = gemGenerator;
+        this.matchDetector = matchDetector;
     }
 
     // private void Update()
@@ -72,11 +73,17 @@ public class SC_GameLogic : MonoBehaviour
     {
         var gem1 = GetGem(gem1Pos.x, gem1Pos.y);
         var gem2 = GetGem(gem2Pos.x, gem2Pos.y);
+
+        lastSwapPos1 = gem1Pos;
+        lastSwapPos2 = gem2Pos;
         
         gameBoard.SwapGems(gem1Pos, gem2Pos);
         
         CheckMoveCo(gem1, gem2, gem1Pos, gem2Pos);
     }
+
+    private Vector2Int lastSwapPos1;
+    private Vector2Int lastSwapPos2;
     
     private void CheckMoveCo(SC_Gem gem1, SC_Gem gem2, Vector2Int gem1Pos, Vector2Int gem2Pos)
     {
@@ -103,22 +110,37 @@ public class SC_GameLogic : MonoBehaviour
     private void DestroyMatches()
     {
         gameBoard.InvokeBatchStart();
+        
+        // 1. ПРОВЕРЯЕМ матчи 4+ ДО удаления, чтобы знать, куда ставить бомбу
+        // (но бомбу ставим ПОСЛЕ удаления)
+        bool shouldPlaceBomb = matchDetector.HasMatchOfFourOrMoreInSwapPosition(lastSwapPos1, lastSwapPos2, out Vector2Int bombPosition);
+        
         // TODO: We may form matches here like Match3, Match4, Match5
-        Debug.Log($"<color=white>Matches count:{gameBoard.CurrentMatches.Count}</color>");
-        foreach (var match in gameBoard.CurrentMatches) {
+        Debug.Log($"<color=white>Matches count:{matchDetector.CurrentMatches.Count}</color>");
+        foreach (var match in matchDetector.CurrentMatches) {
             gameBoard.TryGetGemPos(match, out var gemPos);
             Debug.Log($"<color=yellow>[DELETE] {match} at {gemPos}</color>");
         }
         //Debug.Break();
-        for (int i = 0; i < gameBoard.CurrentMatches.Count; i++) {
-            if (gameBoard.CurrentMatches[i] != null) {
-                ScoreCheck(gameBoard.CurrentMatches[i]);
-                if (gameBoard.TryGetGemPos(gameBoard.CurrentMatches[i], out var gemPos)) {
+        for (int i = 0; i < matchDetector.CurrentMatches.Count; i++) {
+            if (matchDetector.CurrentMatches[i] != null) {
+                ScoreCheck(matchDetector.CurrentMatches[i]);
+                if (gameBoard.TryGetGemPos(matchDetector.CurrentMatches[i], out var gemPos)) {
                     Debug.Log($"<color=white>Match {gemPos}</color>");
 
                     gameBoard.DestroyGem(gemPos);
                 }
             }
+        }
+        gameBoard.InvokeBatchEnd();
+        
+        gameBoard.InvokeBatchStart();
+        // 3. СТАВИМ бомбу на позицию свопа (теперь она пустая после удаления)
+        if (shouldPlaceBomb)
+        {
+            var bombGem = SC_GameVariables.Instance.bomb.Clone();
+            gameBoard.SetGem(bombPosition.x, bombPosition.y, bombGem, GlobalEnums.GemSpawnType.Instant);
+            Debug.Log($"<color=red>BOMB placed at ({bombPosition.x}, {bombPosition.y}) after 4+ match!</color>");
         }
         gameBoard.InvokeBatchEnd();
         
@@ -158,8 +180,8 @@ public class SC_GameLogic : MonoBehaviour
         RefillBoard();
         gameBoard.InvokeBatchEnd();
         
-        gameBoard.FindAllMatches();
-        if (gameBoard.CurrentMatches.Count > 0) {
+        matchDetector.FindAllMatches();
+        if (matchDetector.CurrentMatches.Count > 0) {
             DestroyMatches();
         }
     }
@@ -180,7 +202,7 @@ public class SC_GameLogic : MonoBehaviour
     
     public void FindAllMatches()
     {
-        gameBoard.FindAllMatches();
+        matchDetector.FindAllMatches();
     }
 
     #endregion
