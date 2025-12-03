@@ -4,12 +4,12 @@ using System.Text;
 using UnityEngine;
 
 /// <summary>
-/// Структура для хранения информации о группе матча 4+ гемов
+/// Structure for storing information about a match group of 4+ gems
 /// </summary>
 public struct MatchGroup
 {
-    public List<Vector2Int> Positions; // Все позиции в группе
-    public int Count; // Количество гемов в группе
+    public List<Vector2Int> Positions; // All positions in the group
+    public int Count; // Number of gems in the group
 
     public override string ToString()
     {

@@ -111,8 +111,8 @@ public class SC_GameLogic : MonoBehaviour
     {
         gameBoard.InvokeBatchStart();
         
-        // 1. ПРОВЕРЯЕМ матчи 4+ ДО удаления, чтобы знать, куда ставить бомбу
-        // (но бомбу ставим ПОСЛЕ удаления)
+        // 1. CHECK for 4+ matches BEFORE destruction to know where to place the bomb
+        // (but place the bomb AFTER destruction)
         bool shouldPlaceBomb = matchDetector.HasMatchOfFourOrMoreInSwapPosition(lastSwapPos1, lastSwapPos2, out Vector2Int bombPosition);
         
         // TODO: We may form matches here like Match3, Match4, Match5
@@ -135,7 +135,7 @@ public class SC_GameLogic : MonoBehaviour
         gameBoard.InvokeBatchEnd();
         
         gameBoard.InvokeBatchStart();
-        // 3. СТАВИМ бомбу на позицию свопа (теперь она пустая после удаления)
+        // 3. PLACE the bomb at the swap position (now it's empty after destruction)
         if (shouldPlaceBomb)
         {
             var bombGem = SC_GameVariables.Instance.bomb.Clone();

@@ -91,7 +91,7 @@ public class DistinctGemGenerator : IGemGenerator
             }
         }
 
-        // if all the the types are forbidden (кроме бомбы)
+        // if all the types are forbidden (except bomb)
         if (safeGems.Count == 0) {
             safeGems = availableGems.Where(g => g.Gem.Type != GlobalEnums.GemType.bomb).ToList();
         }

@@ -53,7 +53,7 @@ public class GameBoard : IGameBoardReader
 
     public void SwapGems(Vector2Int fromPos, Vector2Int toPos)
     {
-        // Сохраняем гемы ДО swap
+        // Save gems BEFORE swap
         var gemFrom = allGems[fromPos.x, fromPos.y];
         var gemTo = allGems[toPos.x, toPos.y];
 

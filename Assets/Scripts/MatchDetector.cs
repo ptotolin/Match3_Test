@@ -115,7 +115,7 @@ public class MatchDetector
     
     
     /// <summary>
-    /// Проверяет, будет ли матч если поставить гем в указанную позицию
+    /// Checks if placing a gem at the specified position will create a match
     /// </summary>
     public bool MatchesAt(Vector2Int _PositionToCheck, SC_Gem _GemToCheck)
     {
@@ -137,7 +137,7 @@ public class MatchDetector
     }
     
     /// <summary>
-    /// Находит все связанные гемы того же типа, используя BFS (поиск в ширину)
+    /// Finds all connected gems of the same type using BFS (breadth-first search)
     /// </summary>
     private List<Vector2Int> FindConnectedGemsOfSameType(Vector2Int startPos, GlobalEnums.GemType targetType)
     {
@@ -152,28 +152,28 @@ public class MatchDetector
             Vector2Int currentPos = queue.Dequeue();
             connectedGroup.Add(currentPos);
 
-            // Проверяем всех соседей (вверх, вниз, влево, вправо)
+            // Check all neighbors (up, down, left, right)
             Vector2Int[] neighbors = new Vector2Int[]
             {
-                new Vector2Int(currentPos.x - 1, currentPos.y), // влево
-                new Vector2Int(currentPos.x + 1, currentPos.y), // вправо
-                new Vector2Int(currentPos.x, currentPos.y - 1), // вверх
-                new Vector2Int(currentPos.x, currentPos.y + 1) // вниз
+                new Vector2Int(currentPos.x - 1, currentPos.y), // left
+                new Vector2Int(currentPos.x + 1, currentPos.y), // right
+                new Vector2Int(currentPos.x, currentPos.y - 1), // up
+                new Vector2Int(currentPos.x, currentPos.y + 1) // down
             };
 
             foreach (var neighborPos in neighbors) {
-                // Проверяем границы
+                // Check bounds
                 if (neighborPos.x < 0 || neighborPos.x >= gameBoard.Width ||
                     neighborPos.y < 0 || neighborPos.y >= gameBoard.Height)
                     continue;
 
-                // Пропускаем уже посещенные
+                // Skip already visited
                 if (visited.Contains(neighborPos))
                     continue;
 
                 SC_Gem neighborGem = gameBoard.GetGem(neighborPos.x, neighborPos.y);
 
-                // Проверяем, что гем того же типа
+                // Check if gem is of the same type
                 if (neighborGem != null && neighborGem.Type == targetType) {
                     queue.Enqueue(neighborPos);
                     visited.Add(neighborPos);
@@ -197,38 +197,38 @@ public class MatchDetector
     }
     
     /// <summary>
-    /// Проверяет, является ли группа матчем 4+:
-    /// 1. Есть прямая линия 4+ (горизонтальная или вертикальная)
-    /// 2. ИЛИ есть пересекающиеся линии: горизонтальная 3+ И вертикальная 3+
+    /// Checks if a group is a match of 4+:
+    /// 1. Has a straight line of 4+ (horizontal or vertical)
+    /// 2. OR has intersecting lines: horizontal 3+ AND vertical 3+
     /// </summary>
     private bool HasStraightLineOfFourOrMore(List<Vector2Int> group)
     {
         if (group.Count < 4)
             return false;
 
-        // Находим все горизонтальные линии 3+
+        // Find all horizontal lines of 3+
         List<List<Vector2Int>> horizontalLines = new List<List<Vector2Int>>();
         Dictionary<int, List<int>> rows = new Dictionary<int, List<int>>();
 
-        // Группируем по строкам (y координата)
+        // Group by rows (y coordinate)
         foreach (var pos in group) {
             if (!rows.ContainsKey(pos.y))
                 rows[pos.y] = new List<int>();
             rows[pos.y].Add(pos.x);
         }
 
-        // Находим последовательные горизонтальные линии
+        // Find consecutive horizontal lines
         foreach (var rowPair in rows) {
             rowPair.Value.Sort();
             List<int> currentLine = new List<int> { rowPair.Value[0] };
 
             for (int i = 1; i < rowPair.Value.Count; i++) {
                 if (rowPair.Value[i] == rowPair.Value[i - 1] + 1) {
-                    // Последовательные гемы
+                    // Consecutive gems
                     currentLine.Add(rowPair.Value[i]);
                 }
                 else {
-                    // Конец линии
+                    // End of line
                     if (currentLine.Count >= 3) {
                         List<Vector2Int> line = new List<Vector2Int>();
                         foreach (var x in currentLine)
@@ -240,7 +240,7 @@ public class MatchDetector
                 }
             }
 
-            // Проверяем последнюю линию в строке
+            // Check the last line in the row
             if (currentLine.Count >= 3) {
                 List<Vector2Int> line = new List<Vector2Int>();
                 foreach (var x in currentLine)
@@ -249,7 +249,7 @@ public class MatchDetector
             }
         }
 
-        // Проверяем, есть ли горизонтальная линия 4+
+        // Check if there is a horizontal line of 4+
         foreach (var line in horizontalLines) {
             if (line.Count >= 4) {
                 Debug.Log($"<color=green>Found horizontal line of {line.Count} gems!</color>");
@@ -257,29 +257,29 @@ public class MatchDetector
             }
         }
 
-        // Находим все вертикальные линии 3+
+        // Find all vertical lines of 3+
         List<List<Vector2Int>> verticalLines = new List<List<Vector2Int>>();
         Dictionary<int, List<int>> cols = new Dictionary<int, List<int>>();
 
-        // Группируем по столбцам (x координата)
+        // Group by columns (x coordinate)
         foreach (var pos in group) {
             if (!cols.ContainsKey(pos.x))
                 cols[pos.x] = new List<int>();
             cols[pos.x].Add(pos.y);
         }
 
-        // Находим последовательные вертикальные линии
+        // Find consecutive vertical lines
         foreach (var colPair in cols) {
             colPair.Value.Sort();
             List<int> currentLine = new List<int> { colPair.Value[0] };
 
             for (int i = 1; i < colPair.Value.Count; i++) {
                 if (colPair.Value[i] == colPair.Value[i - 1] + 1) {
-                    // Последовательные гемы
+                    // Consecutive gems
                     currentLine.Add(colPair.Value[i]);
                 }
                 else {
-                    // Конец линии
+                    // End of line
                     if (currentLine.Count >= 3) {
                         List<Vector2Int> line = new List<Vector2Int>();
                         foreach (var y in currentLine)
@@ -291,7 +291,7 @@ public class MatchDetector
                 }
             }
 
-            // Проверяем последнюю линию в столбце
+            // Check the last line in the column
             if (currentLine.Count >= 3) {
                 List<Vector2Int> line = new List<Vector2Int>();
                 foreach (var y in currentLine)
@@ -300,7 +300,7 @@ public class MatchDetector
             }
         }
 
-        // Проверяем, есть ли вертикальная линия 4+
+        // Check if there is a vertical line of 4+
         foreach (var line in verticalLines) {
             if (line.Count >= 4) {
                 Debug.Log($"<color=green>Found vertical line of {line.Count} gems!</color>");
@@ -308,7 +308,7 @@ public class MatchDetector
             }
         }
 
-        // Проверяем пересечение: есть ли горизонтальная линия 3+ И вертикальная линия 3+ которые пересекаются
+        // Check intersection: is there a horizontal line of 3+ AND a vertical line of 3+ that intersect
         foreach (var hLine in horizontalLines) {
             if (hLine.Count < 3)
                 continue;
@@ -317,10 +317,10 @@ public class MatchDetector
                 if (vLine.Count < 3)
                     continue;
 
-                // Проверяем пересечение линий
+                // Check line intersection
                 foreach (var hPos in hLine) {
                     if (vLine.Contains(hPos)) {
-                        // Линии пересекаются! Это матч 4+
+                        // Lines intersect! This is a match of 4+
                         Debug.Log(
                             $"<color=green>Found intersecting lines: horizontal {hLine.Count} and vertical {vLine.Count}!</color>");
                         return true;
@@ -333,21 +333,21 @@ public class MatchDetector
     }
     
     /// <summary>
-    /// Находит все группы из 4 или более гемов, где есть матч 4+:
-    /// - Прямая линия 4+ (горизонтальная или вертикальная)
-    /// - ИЛИ пересекающиеся линии: горизонтальная 3+ И вертикальная 3+
+    /// Finds all groups of 4 or more gems where there is a match of 4+:
+    /// - Straight line of 4+ (horizontal or vertical)
+    /// - OR intersecting lines: horizontal 3+ AND vertical 3+
     /// </summary>
     private List<MatchGroup> FindMatchesOfFourOrMore()
     {
         List<MatchGroup> matchGroups = new List<MatchGroup>();
         HashSet<Vector2Int> processedPositions = new HashSet<Vector2Int>();
 
-        // Проходим по всем гемам на доске
+        // Iterate through all gems on the board
         for (int x = 0; x < gameBoard.Width; x++) {
             for (int y = 0; y < gameBoard.Height; y++) {
                 Vector2Int currentPos = new Vector2Int(x, y);
 
-                // Пропускаем уже обработанные позиции
+                // Skip already processed positions
                 if (processedPositions.Contains(currentPos))
                     continue;
 
@@ -355,14 +355,14 @@ public class MatchDetector
                 if (currentGem == null || currentGem.Type == GlobalEnums.GemType.bomb)
                     continue;
 
-                // Ищем связанную группу гемов того же типа
+                // Find connected group of gems of the same type
                 List<Vector2Int> group = FindConnectedGemsOfSameType(currentPos, currentGem.Type);
 
-                // Проверяем, есть ли в группе матч 4+ (прямая линия 4+ или пересекающиеся линии 3+)
+                // Check if the group has a match of 4+ (straight line of 4+ or intersecting lines of 3+)
                 if (group.Count >= 4 && HasStraightLineOfFourOrMore(group)) {
                     matchGroups.Add(new MatchGroup { Positions = group, Count = group.Count });
 
-                    // Отмечаем все позиции как обработанные
+                    // Mark all positions as processed
                     foreach (var pos in group) {
                         processedPositions.Add(pos);
                     }
@@ -375,9 +375,9 @@ public class MatchDetector
 
     
     /// <summary>
-    /// Проверяет, участвует ли позиция свопа в матче 4+ (без постановки бомбы)
+    /// Checks if the swap position participates in a match of 4+ (without placing a bomb)
     /// </summary>
-    /// <returns>true если найден матч 4+, и возвращает позицию для бомбы</returns>
+    /// <returns>true if a match of 4+ is found, and returns the position for the bomb</returns>
     public bool HasMatchOfFourOrMoreInSwapPosition(Vector2Int swapPos1, Vector2Int swapPos2,
         out Vector2Int bombPosition)
     {
@@ -390,12 +390,12 @@ public class MatchDetector
         int maxGroupSize = 0;
 
         foreach (var group in matchGroups) {
-            // Проверяем, содержит ли группа позицию свопа
+            // Check if the group contains the swap position
             bool containsPos1 = group.Positions.Contains(swapPos1);
             bool containsPos2 = group.Positions.Contains(swapPos2);
 
             if (containsPos1 || containsPos2) {
-                // Выбираем позицию свопа с наибольшей группой
+                // Select the swap position with the largest group
                 if (containsPos1 && group.Count > maxGroupSize) {
                     bombPosition = swapPos1;
                     maxGroupSize = group.Count;
