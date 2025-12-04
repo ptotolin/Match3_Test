@@ -7,7 +7,7 @@ public class MoveGemCommand : IGameBoardCommand
 
     public string Details {
         get {
-            return gem.ToString() + " => " + destPos.ToString();
+            return gem.ToString() + " from " + fromPos.ToString() + " => " + destPos.ToString();
         }
     }
     
@@ -15,6 +15,7 @@ public class MoveGemCommand : IGameBoardCommand
     private readonly ICellModelToWorldConverter cellModelToWorldConverter;
     private readonly GameBoardPresenter gameBoardPresenter;
     private readonly SC_Gem gem;
+    private readonly Vector2Int fromPos;
     private readonly Vector2Int destPos;
     private readonly float blocksPerSecondSpeed;
     
@@ -23,12 +24,14 @@ public class MoveGemCommand : IGameBoardCommand
     
     public MoveGemCommand(
         SC_Gem gem, 
+        Vector2Int fromPos,
         Vector2Int toPos, 
         float blocksPerSecondSpeed, 
         ICellModelToWorldConverter cellModelToWorldConverter,
         GameBoardPresenter gameBoardPresenter)
     {
         this.gem = gem;
+        this.fromPos = fromPos;
         this.destPos = toPos;
         this.cellModelToWorldConverter = cellModelToWorldConverter;
         this.blocksPerSecondSpeed = blocksPerSecondSpeed;
@@ -41,15 +44,20 @@ public class MoveGemCommand : IGameBoardCommand
     {
         GameLogger.Log($"===== Started executing ======");
         var destinationPoint = cellModelToWorldConverter.Convert(destPos);
-        var timer = 0.0f;
+        var startPoint = cellModelToWorldConverter.Convert(fromPos);
+        
         var gemView = gameBoardPresenter.GetGemView(gem);
         var gemViewTransform = gemView.transform;
-        Vector2 startPos = gemViewTransform.position;
+        
+        gemViewTransform.position = startPoint;
+        
+        var timer = 0.0f;
+        Vector2 startPos = startPoint;
         var moveVec = destinationPoint - startPos;
         var duration = (moveVec.magnitude / blockSize) / blocksPerSecondSpeed;
         while (timer < duration) {
             timer += Time.deltaTime;
-            var normalizedTime = timer / duration;
+            var normalizedTime = Mathf.Clamp01(timer / duration);
             gemViewTransform.position = startPos + normalizedTime * moveVec;
             await Task.Yield();
         }

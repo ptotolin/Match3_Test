@@ -91,7 +91,7 @@ public class GameBoardPresenter : MonoBehaviour
 
         var gem = gameboard.GetGem(fromPos.x, fromPos.y);
         
-        var moveCommand = new MoveGemCommand(gem, toPos, SC_GameVariables.Instance.BlockSpeed, cellModelToWorldConverter, this);
+        var moveCommand = new MoveGemCommand(gem, fromPos, toPos, SC_GameVariables.Instance.BlockSpeed, cellModelToWorldConverter, this);
         gameBoardEventsAdapter.AddColumnCommand(moveCommand, fromPos.x);
     }
 
@@ -159,8 +159,9 @@ public class GameBoardPresenter : MonoBehaviour
     private void SpawnGemFallFromTop(Vector2Int gemPos)
     {
         var gem = gameboard.GetGem(gemPos.x, gemPos.y);
-        var spawnGemCommand = new SpawnGemCommand(new Vector2Int(gemPos.x, gameboard.Height), gem, gemsHolder, cellModelToWorldConverter, this);
-        var moveCommand = new MoveGemCommand(gem, gemPos, SC_GameVariables.Instance.BlockSpeed, cellModelToWorldConverter, this);
+        var spawnPos = new Vector2Int(gemPos.x, gameboard.Height);
+        var spawnGemCommand = new SpawnGemCommand(spawnPos, gem, gemsHolder, cellModelToWorldConverter, this);
+        var moveCommand = new MoveGemCommand(gem, spawnPos, gemPos, SC_GameVariables.Instance.BlockSpeed, cellModelToWorldConverter, this);
         gameBoardEventsAdapter.AddColumnCommand(spawnGemCommand, gemPos.x);
         gameBoardEventsAdapter.AddColumnCommand(moveCommand, gemPos.x);
     }
