@@ -17,12 +17,14 @@ public class GameBootstrap : MonoBehaviour
     private GameBoard gameBoard;
     private GameBoardEventsAdapter gameBoardEventsAdapter;
     private MatchDetector matchDetector;
+    private EventBus eventBus;
 
     private void Awake()
     {
         gameBoard = new GameBoard(width, height);
         var gemGenerator = new DistinctGemGenerator(gameBoard);
         matchDetector = new MatchDetector(gameBoard);
+        eventBus = new EventBus();
         GameBoardSetup(gemGenerator);
         
         // Create phase
@@ -38,8 +40,8 @@ public class GameBootstrap : MonoBehaviour
         gameBoardEventsAdapter = new GameBoardEventsAdapter(gameBoard);
         
         // Initialize phase
-        gameLogic.Initialize(gemInputHandler, gameBoard, gemGenerator, matchDetector);
-        gameBoardPresenter.Initialize(gameBoard, gameBoardEventsAdapter);
+        gameLogic.Initialize(gemInputHandler, gameBoard, gemGenerator, matchDetector, eventBus);
+        gameBoardPresenter.Initialize(gameBoard, gameBoardEventsAdapter, eventBus);
         gemInputHandler.Initialize(gameBoard, gameBoardPresenter);
     }
 

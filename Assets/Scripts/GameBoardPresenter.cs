@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-
 public class GameBoardPresenter : MonoBehaviour
 {
     [SerializeField] private Transform gemsHolder;
@@ -11,11 +10,11 @@ public class GameBoardPresenter : MonoBehaviour
     // dependencies
     private GameBoard gameboard;
     private GameBoardEventsAdapter gameBoardEventsAdapter;
+    private IEventBus eventBus;
     
     // locals
     private Dictionary<SC_Gem, SC_GemView> gemViewsDict = new();
     private ICellModelToWorldConverter cellModelToWorldConverter;
-    //private GameBoardCommandsExecutor gameBoardCommandsExecutor;
     private GlobalEnums.GameState currentState = GlobalEnums.GameState.move;
     
     // properties
@@ -26,13 +25,13 @@ public class GameBoardPresenter : MonoBehaviour
         UnsubscribeFromEvents();
     }
 
-    public void Initialize(GameBoard gameboard, GameBoardEventsAdapter gameBoardEventsAdapter)
+    public void Initialize(GameBoard gameboard, GameBoardEventsAdapter gameBoardEventsAdapter, IEventBus eventBus)
     {
         this.gameboard = gameboard;
         this.gameBoardEventsAdapter = gameBoardEventsAdapter;
+        this.eventBus = eventBus;
 
         cellModelToWorldConverter = new CellModelToWorldConverter();
-        //gameBoardCommandsExecutor = new GameBoardCommandsExecutor();
         SubscribeToEvents();
         
         gameboard.InvokeBatchStart();
@@ -40,16 +39,11 @@ public class GameBoardPresenter : MonoBehaviour
             for (var y = 0; y < this.gameboard.Height; ++y) {
                 var gem = this.gameboard.GetGem(x, y);
                 var spawnGemCommand = new SpawnGemCommand(new Vector2Int(x, y), gem, gemsHolder, cellModelToWorldConverter, this);
-                //gameBoardCommandsExecutor.AddCommand(spawnGemCommand);
                 gameBoardEventsAdapter.AddGlobalCommand(spawnGemCommand);
             }
         }
         
         gameboard.InvokeBatchEnd();
-
-        //gameBoardEventsAdapter.FlushCommands();
-        
-        
     }
 
     public void RegisterGemView(SC_Gem gem, SC_GemView gemView)
@@ -65,16 +59,6 @@ public class GameBoardPresenter : MonoBehaviour
     public void UnregisterGemViewByView(SC_GemView gemView)
     {
         var rec = gemViewsDict.First(t => t.Value == gemView);
-        
-        // -- DEBUG
-        // if (gameboard.TryGetGemPos(rec.Key, out var pos)) {
-        //     Debug.Log($"Unregister gem at pos: {pos}");
-        // }
-        // else {
-        //     Debug.Log($"CAN'T FIND gem {rec.Key}. View at position: {gemView.transform.position}");
-        // }
-        // -- END 
-        
         gemViewsDict.Remove(rec.Key);
     }
 
@@ -98,7 +82,6 @@ public class GameBoardPresenter : MonoBehaviour
         Debug.Log($"Destroy gem {curGem} at {_Pos}");
 
         var destroyGemCommand = new DestroyGemCommand(this, curGem);
-        //gameBoardCommandsExecutor.AddCommand(destroyGemCommand);
         gameBoardEventsAdapter.AddGlobalCommand(destroyGemCommand);
     }
     
@@ -109,7 +92,6 @@ public class GameBoardPresenter : MonoBehaviour
         var gem = gameboard.GetGem(fromPos.x, fromPos.y);
         
         var moveCommand = new MoveGemCommand(gem, toPos, SC_GameVariables.Instance.BlockSpeed, cellModelToWorldConverter, this);
-        //gameBoardCommandsExecutor.AddCommand(moveCommand);
         gameBoardEventsAdapter.AddColumnCommand(moveCommand, fromPos.x);
     }
 
@@ -117,11 +99,7 @@ public class GameBoardPresenter : MonoBehaviour
     {
         Debug.Log($"[Client] Swap({gem1Pos}, {gem2Pos})");
 
-        // var gem1 = gameboard.GetGem(gem1Pos.x, gem1Pos.y);
-        // var gem2 = gameboard.GetGem(gem2Pos.x, gem2Pos.y);
-
         var swapGemCommand = new SwapGemsCommand(gem1, gem2, gem1Pos, gem2Pos, cellModelToWorldConverter, this);
-        //gameBoardCommandsExecutor.AddCommand(swapGemCommand);
         gameBoardEventsAdapter.AddGlobalCommand(swapGemCommand);
 
         currentState = GlobalEnums.GameState.wait;
@@ -149,6 +127,28 @@ public class GameBoardPresenter : MonoBehaviour
         currentState = GlobalEnums.GameState.move;
     }
 
+    private List<SC_Gem> gemsMarkedForDestroy = new();
+    
+    private void OnBombExploded(BombExplosionEventData eventData)
+    {
+        Debug.Log($"<color=orange>Bomb exploded at {eventData.Bomb}! Affected: {eventData.AffectedGems.Count} positions</color>");
+
+        gemsMarkedForDestroy.AddRange(eventData.AffectedGems);
+        
+        // Создаем команду взрыва бомбы с правильной последовательностью
+        var bombExplosionCommand = new BombExplosionCommand(
+            eventData.Bomb,
+            eventData.AffectedGems,
+            eventData.NeighborDestroyDelay,
+            eventData.BombDestroyDelay,
+            this,
+            gameboard // GameBoard реализует IGameBoardReader
+        );
+    
+        // Добавляем команду в адаптер для выполнения
+        gameBoardEventsAdapter.AddGlobalCommand(bombExplosionCommand);
+    }
+
     private void SpawnGemInstant(Vector2Int gemPos)
     {
         var gem = gameboard.GetGem(gemPos.x, gemPos.y);
@@ -167,6 +167,12 @@ public class GameBoardPresenter : MonoBehaviour
     
     private void OnGemDestroy(Vector2Int gemPos)
     {
+        var gemToDestroy = gameboard.GetGem(gemPos.x, gemPos.y);
+        if (gemsMarkedForDestroy.Contains(gemToDestroy)) {
+            gemsMarkedForDestroy.Remove(gemToDestroy);
+            return;
+        }
+        
         DestroyGemAt(gemPos);
     }
 
@@ -179,6 +185,8 @@ public class GameBoardPresenter : MonoBehaviour
 
         //gameBoardCommandsExecutor.EventLastCommandExecuted += OnLastCommandExecuted;
         gameBoardEventsAdapter.EventLastCommandExecuted += OnLastCommandExecuted;
+        
+        eventBus.Subscribe<BombExplosionEventData>(OnBombExploded);
     }
 
     private void UnsubscribeFromEvents()
@@ -190,6 +198,7 @@ public class GameBoardPresenter : MonoBehaviour
         
         //gameBoardCommandsExecutor.EventLastCommandExecuted -= OnLastCommandExecuted;
         gameBoardEventsAdapter.EventLastCommandExecuted -= OnLastCommandExecuted;
+        eventBus.Unsubscribe<BombExplosionEventData>(OnBombExploded);
 
     }
 }

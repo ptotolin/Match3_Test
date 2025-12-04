@@ -1,12 +1,16 @@
 ﻿using System;
 using UnityEngine;
 
+using UnityEngine;
+
 [Serializable]
 public class SC_Gem
 {
     [SerializeField] private GlobalEnums.GemType type;
 
     public GlobalEnums.GemType Type => type;
+    
+    public IGemSpecialAbility SpecialAbility { get; set; }
     
     public bool IsMatch { get; set; }
     public int ScoreValue { get; }
