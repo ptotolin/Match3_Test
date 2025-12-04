@@ -34,9 +34,11 @@ public class GameBoardEventsAdapter
     
     public void AddGlobalCommand(IGameBoardCommand command)
     {
-        // if (batchRounds.Count == 0) {
-        //     batchRounds.Enqueue(new BatchRound() { Number = roundNum});
-        // }
+        if (batchRounds.Count == 0) {
+            Debug.LogError($"Can't start command since no round found!");
+            return;
+        }
+        
         var currentRound = batchRounds[^1];
         Debug.Log($"<color=green>[Command] Added Command '{command.Name}' to queue of batch round #{currentRound.Number}. Details:\n {command.Details} </color>");
         
@@ -74,26 +76,40 @@ public class GameBoardEventsAdapter
         }
         
         // 2. Execute per-column tasks
-        List<Task> commandsToExecuteInParallel = new();
-        while (currentRound.ColumnCommands.Count > 0) {
-            for (var col = 0; col < gameBoard.Width; ++col) {
-                if (currentRound.ColumnCommands.TryGetValue(col, out var commandsInColumn)) {
-                    var command = commandsInColumn.Dequeue();
-                    if (commandsInColumn.Count == 0) {
-                        currentRound.ColumnCommands.Remove(col);
-                    }
+        // List<Task> commandsToExecuteInParallel = new();
+        // while (currentRound.ColumnCommands.Count > 0) {
+        //     for (var col = 0; col < gameBoard.Width; ++col) {
+        //         if (currentRound.ColumnCommands.TryGetValue(col, out var commandsInColumn)) {
+        //             var command = commandsInColumn.Dequeue();
+        //             if (commandsInColumn.Count == 0) {
+        //                 currentRound.ColumnCommands.Remove(col);
+        //             }
+        //
+        //             Debug.Log(
+        //                 $"<color=cyan>Executing column command {command.Name}. Details: {command.Details}</color>");
+        //             commandsToExecuteInParallel.Add(command.ExecuteAsync());
+        //         }
+        //     }
+        //
+        //     await Task.WhenAll(commandsToExecuteInParallel);
+        //     commandsToExecuteInParallel.Clear();
+        //     Debug.Log($"<color=cyan>Finished executing parallel commands. batchRounds = {batchRounds.Count} </color>");
+        // }
 
-                    Debug.Log(
-                        $"<color=cyan>Executing column command {command.Name}. Details: {command.Details}</color>");
-                    commandsToExecuteInParallel.Add(command.ExecuteAsync());
-                }
+        // 2. Execute per-column tasks
+        List<Task> allColumnTasks = new();
+
+        // For each column, create tasks that launch all commands with delays
+        for (var col = 0; col < gameBoard.Width; ++col) {
+            if (currentRound.ColumnCommands.TryGetValue(col, out var commandsInColumn) && commandsInColumn.Count > 0) {
+                // Create a task for this column that will launch all commands with delays
+                var columnTask = ExecuteColumnWithStagger(commandsInColumn, 0.1f);
+                allColumnTasks.Add(columnTask);
             }
-
-            await Task.WhenAll(commandsToExecuteInParallel);
-            commandsToExecuteInParallel.Clear();
-            Debug.Log($"<color=cyan>Finished executing parallel commands. batchRounds = {batchRounds.Count} </color>");
         }
 
+        await Task.WhenAll(allColumnTasks);
+        
         Debug.Log($"<color=cyan>^^^^^^^ FINISHED Executing round #{currentRound.Number}! ^^^^^^^^ </color>");
         if (batchRounds.Count > 0) {
             executing = false;
@@ -104,7 +120,25 @@ public class GameBoardEventsAdapter
             executing = false;
         }
     }
+
+    private async Task ExecuteColumnWithStagger(Queue<IGameBoardCommand> commands, float staggerDelay)
+    {
+        List<Task> columnCommands = new();
+        int commandIndex = 0;
     
+        // Create all tasks at once (with start delays)
+        foreach (var command in commands)
+        {
+            float startDelay = commandIndex * staggerDelay;
+            var delayedCommand = new DelayedStartCommand(command, startDelay);
+            columnCommands.Add(delayedCommand.ExecuteAsync());
+            commandIndex++;
+        }
+    
+        // Launch all in parallel
+        await Task.WhenAll(columnCommands);
+    }
+
     private void OnBatchStarted()
     {
         BatchRound batchRound = new BatchRound() {Number = roundNum++};

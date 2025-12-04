@@ -23,7 +23,7 @@ public static class SpecialAbilityFactory
                 return new BombSpecialAbility(gameBoard, gem, eventBus);
             
             default:
-                return null; // Обычные гемы не имеют способности
+                return null; // Regular gems have no ability
         }
     }
 }

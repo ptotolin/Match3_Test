@@ -29,7 +29,7 @@ public class MarkGemForActivationCommand : IGameBoardCommand
         var gemView = presenter.GetGemView(gem);
         if (gemView != null)
         {
-            // TODO: Показать визуальный эффект пометки (например, пульсация, свечение и т.д.)
+            // TODO: Show visual effect for marking (e.g., pulse, glow, etc.)
             // gemView.ShowActivationMark();
             Debug.Log($"<color=yellow>Visual: Gem at {gemPos} marked for {abilityType} activation</color>");
         }

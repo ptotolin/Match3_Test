@@ -7,7 +7,7 @@ public class MatchDetector
 {
     private readonly IGameBoardReader gameBoard;
     private List<SC_Gem> currentMatches = new();
-    // Поле для хранения гемов с способностями, которые нужно активировать
+    // Field for storing gems with abilities that need to be activated
     private List<SC_Gem> gemsWithAbilitiesToActivate = new();
 
     public List<SC_Gem> GemsWithAbilitiesToActivate => gemsWithAbilitiesToActivate;
@@ -440,8 +440,6 @@ public class MatchDetector
 
         return maxGroupSize >= 4;
     }
-
-    // В MatchDetector.cs добавить метод:
 
     /// <summary>
     /// Generates cross pattern for bomb explosion (13 cells: 3x3 + 4 cardinal directions)

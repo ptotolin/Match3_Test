@@ -30,20 +30,20 @@ public class BombExplosionCommand : IGameBoardCommand
         this.bombDestroyDelay = bombDestroyDelay;
         this.gameBoard = gameBoard;
         
-        // Разделяем соседей и саму бомбу
+        // Separate neighbors from the bomb itself
         
         neighborGems = affectedGems.Where(gem => gem != bomb).ToList();
     }
     
     public async Task ExecuteAsync()
     {
-        // 1. Задержка перед уничтожением соседей
+        // 1. Delay before destroying neighbors
         if (neighborDestroyDelay > 0)
         {
             await new DelayCommand(neighborDestroyDelay).ExecuteAsync();
         }
         
-        // 2. Уничтожаем всех соседей параллельно
+        // 2. Destroy all neighbors in parallel
         var destroyTasks = new List<Task>();
         foreach (var neighbourGem in neighborGems)
         {
@@ -56,13 +56,13 @@ public class BombExplosionCommand : IGameBoardCommand
         
         await Task.WhenAll(destroyTasks);
         
-        // 3. Задержка перед уничтожением бомбы
+        // 3. Delay before destroying the bomb
         if (bombDestroyDelay > 0)
         {
             await new DelayCommand(bombDestroyDelay).ExecuteAsync();
         }
         
-        // 4. Уничтожаем саму бомбу
+        // 4. Destroy the bomb itself
         if (bomb != null)
         {
             var bombDestroyCommand = new DestroyGemCommand(presenter, bomb);

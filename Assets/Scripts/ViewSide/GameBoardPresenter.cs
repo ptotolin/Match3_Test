@@ -135,17 +135,17 @@ public class GameBoardPresenter : MonoBehaviour
 
         gemsMarkedForDestroy.AddRange(eventData.AffectedGems);
         
-        // Создаем команду взрыва бомбы с правильной последовательностью
+        // Create bomb explosion command with correct sequence
         var bombExplosionCommand = new BombExplosionCommand(
             eventData.Bomb,
             eventData.AffectedGems,
             eventData.NeighborDestroyDelay,
             eventData.BombDestroyDelay,
             this,
-            gameboard // GameBoard реализует IGameBoardReader
+            gameboard // GameBoard implements IGameBoardReader
         );
     
-        // Добавляем команду в адаптер для выполнения
+        // Add command to adapter for execution
         gameBoardEventsAdapter.AddGlobalCommand(bombExplosionCommand);
     }
 

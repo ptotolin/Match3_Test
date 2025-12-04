@@ -172,16 +172,16 @@ public class SC_GameLogic : MonoBehaviour
             if (matchDetector.CurrentMatches[i] != null) {
                 var gem = matchDetector.CurrentMatches[i];
             
-                // // Проверяем, есть ли у гема способность
+                // // Check if gem has ability
                 // if (gem.SpecialAbility != null)
                 // {
-                //     // Помечаем на активацию (НЕ активируем сразу!)
+                //     // Mark for activation (do NOT activate immediately!)
                 //     gemsMarkedForAbilityActivation.Add(gem);
                 //     Debug.Log($"<color=orange>Marked gem with ability '{gem.SpecialAbility.AbilityType}' for activation</color>");
                 // }
                 // else
                 {
-                    // Обычный гем - удаляем и считаем очки
+                    // Regular gem - remove and count points
                     ScoreCheck(gem);
                     if (gameBoard.TryGetGemPos(gem, out var gemPos)) {
                         Debug.Log($"<color=white>Match {gemPos}</color>");
@@ -263,7 +263,7 @@ public class SC_GameLogic : MonoBehaviour
         {
             gameBoard.InvokeBatchStart();
         
-            // Создаем копию списка, так как Execute() может изменить позиции гемов
+            // Create a copy of the list, as Execute() may change gem positions
             var gemsToActivate = new List<SC_Gem>(gemsMarkedForAbilityActivation);
             gemsMarkedForAbilityActivation.Clear();
         
@@ -271,7 +271,7 @@ public class SC_GameLogic : MonoBehaviour
             {
                 if (gem != null && gem.SpecialAbility != null)
                 {
-                    // Проверяем, что гем еще на доске (не был удален при падении)
+                    // Check that the gem is still on the board (not removed during fall)
                     if (gameBoard.TryGetGemPos(gem, out var gemPos))
                     {
                         Debug.Log($"<color=orange>Activating ability '{gem.SpecialAbility.AbilityType}' for gem at ({gemPos.x}, {gemPos.y})</color>");
@@ -283,7 +283,7 @@ public class SC_GameLogic : MonoBehaviour
             gameBoard.InvokeBatchEnd();
         }
     
-        // Проверяем новые матчи
+        // Check for new matches
         matchDetector.FindAllMatches();
         if (matchDetector.CurrentMatches.Count > 0) {
             DestroyMatches();
