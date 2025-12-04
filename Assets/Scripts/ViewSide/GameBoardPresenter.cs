@@ -76,10 +76,10 @@ public class GameBoardPresenter : MonoBehaviour
     {
         SC_Gem curGem = gameboard.GetGem(_Pos.x,_Pos.y);
         if (curGem == null) {
-            Debug.LogError($"DestroyGemAt curGem == null");
+            GameLogger.LogError($"DestroyGemAt curGem == null");
         }
         
-        Debug.Log($"Destroy gem {curGem} at {_Pos}");
+        GameLogger.Log($"Destroy gem {curGem} at {_Pos}");
 
         var destroyGemCommand = new DestroyGemCommand(this, curGem);
         gameBoardEventsAdapter.AddGlobalCommand(destroyGemCommand);
@@ -87,7 +87,7 @@ public class GameBoardPresenter : MonoBehaviour
     
     private void OnGemMoved(Vector2Int fromPos, Vector2Int toPos)
     {
-        Debug.Log($"[Client] GemMove({fromPos}, {toPos})");
+        GameLogger.Log($"[Client] GemMove({fromPos}, {toPos})");
 
         var gem = gameboard.GetGem(fromPos.x, fromPos.y);
         
@@ -97,7 +97,7 @@ public class GameBoardPresenter : MonoBehaviour
 
     private void OnGemsSwapped(Vector2Int gem1Pos, Vector2Int gem2Pos, SC_Gem gem1, SC_Gem gem2)
     {
-        Debug.Log($"[Client] Swap({gem1Pos}, {gem2Pos})");
+        GameLogger.Log($"[Client] Swap({gem1Pos}, {gem2Pos})");
 
         var swapGemCommand = new SwapGemsCommand(gem1, gem2, gem1Pos, gem2Pos, cellModelToWorldConverter, this);
         gameBoardEventsAdapter.AddGlobalCommand(swapGemCommand);
@@ -131,7 +131,7 @@ public class GameBoardPresenter : MonoBehaviour
     
     private void OnBombExploded(BombExplosionEventData eventData)
     {
-        Debug.Log($"<color=orange>Bomb exploded at {eventData.Bomb}! Affected: {eventData.AffectedGems.Count} positions</color>");
+        GameLogger.Log($"<color=orange>Bomb exploded at {eventData.Bomb}! Affected: {eventData.AffectedGems.Count} positions</color>");
 
         gemsMarkedForDestroy.AddRange(eventData.AffectedGems);
         

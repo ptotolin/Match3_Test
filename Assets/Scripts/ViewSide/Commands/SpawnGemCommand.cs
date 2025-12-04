@@ -35,7 +35,7 @@ public class SpawnGemCommand : IGameBoardCommand
         
         var gemInfo = SC_GameVariables.Instance.GemsInfo.FirstOrDefault(t => t.Gem.Type == gem.Type);
         if (gemInfo.GemView == null) {
-            Debug.LogError($"Can't find gem with such a gemType: {gem.Type}");
+            GameLogger.LogError($"Can't find gem with such a gemType: {gem.Type}");
             return;
         }
 

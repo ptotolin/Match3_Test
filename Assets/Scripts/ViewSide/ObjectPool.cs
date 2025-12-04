@@ -49,7 +49,7 @@ public class ObjectPool : SingletonMonobehaviour<ObjectPool>
         prefabMap[poolName] = prefab;
         pools[poolName] = new Queue<GameObject>();
         
-        Debug.Log($"ObjectPool: Auto-created pool '{poolName}'");
+        GameLogger.Log($"ObjectPool: Auto-created pool '{poolName}'");
     }
     
     private GameObject GetObjectFromPool(string poolName)
@@ -91,13 +91,13 @@ public class ObjectPool : SingletonMonobehaviour<ObjectPool>
         
         var pooledObject = obj.GetComponent<PooledObject>();
         if (pooledObject == null) {
-            Debug.LogError($"ObjectPool: Trying to despawn non-pooled object: {obj.name}");
+            GameLogger.LogError($"ObjectPool: Trying to despawn non-pooled object: {obj.name}");
             return;
         }
         
         string poolName = pooledObject.PoolName;
         if (!pools.ContainsKey(poolName)) {
-            Debug.LogError($"ObjectPool: Pool '{poolName}' doesn't exist for despawn!");
+            GameLogger.LogError($"ObjectPool: Pool '{poolName}' doesn't exist for despawn!");
             return;
         }
         

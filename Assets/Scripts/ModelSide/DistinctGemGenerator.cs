@@ -15,7 +15,7 @@ public class DistinctGemGenerator : IGemGenerator
     {
         var availableGems = SC_GameVariables.Instance.GemsInfo;
         if (availableGems == null || availableGems.Count == 0) {
-            Debug.LogError("No gems available for generation!");
+            GameLogger.LogError("No gems available for generation!");
             return null;
         }
         

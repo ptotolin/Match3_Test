@@ -33,7 +33,7 @@ public class SwapGemsCommand : IGameBoardCommand
         var gem1Move = new MoveGemCommand(gem1, gem2Pos, SC_GameVariables.Instance.BlockSpeed, cellModelToWorldConverter, gameBoardPresenter);
         var gem2Move = new MoveGemCommand(gem2, gem1Pos, SC_GameVariables.Instance.BlockSpeed, cellModelToWorldConverter, gameBoardPresenter);
         
-        Debug.Log($"Swapping {gem1} to {gem2} with pos {gem1Pos} to {gem2Pos}");
+        GameLogger.Log($"Swapping {gem1} to {gem2} with pos {gem1Pos} to {gem2Pos}");
 
         var commands = new List<IGameBoardCommand>() { gem1Move, gem2Move };
         compositeCommand = new CompositeCommand(commands);

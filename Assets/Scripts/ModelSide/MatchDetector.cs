@@ -193,7 +193,7 @@ public class MatchDetector
             }
         }
 
-        Debug.Log($"<color=blue>FindConnectedGemsOfSameType({startPos}, {targetType}) => {sb.ToString()}</color>");
+        GameLogger.Log($"<color=blue>FindConnectedGemsOfSameType({startPos}, {targetType}) => {sb.ToString()}</color>");
 
         return connectedGroup;
     }
@@ -254,7 +254,7 @@ public class MatchDetector
         // Check if there is a horizontal line of 4+
         foreach (var line in horizontalLines) {
             if (line.Count >= 4) {
-                Debug.Log($"<color=green>Found horizontal line of {line.Count} gems!</color>");
+                GameLogger.Log($"<color=green>Found horizontal line of {line.Count} gems!</color>");
                 return true;
             }
         }
@@ -305,7 +305,7 @@ public class MatchDetector
         // Check if there is a vertical line of 4+
         foreach (var line in verticalLines) {
             if (line.Count >= 4) {
-                Debug.Log($"<color=green>Found vertical line of {line.Count} gems!</color>");
+                GameLogger.Log($"<color=green>Found vertical line of {line.Count} gems!</color>");
                 return true;
             }
         }
@@ -323,7 +323,7 @@ public class MatchDetector
                 foreach (var hPos in hLine) {
                     if (vLine.Contains(hPos)) {
                         // Lines intersect! This is a match of 4+
-                        Debug.Log(
+                        GameLogger.Log(
                             $"<color=green>Found intersecting lines: horizontal {hLine.Count} and vertical {vLine.Count}!</color>");
                         return true;
                     }

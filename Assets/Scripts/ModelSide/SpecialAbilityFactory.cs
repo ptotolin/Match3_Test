@@ -17,7 +17,7 @@ public static class SpecialAbilityFactory
             case GlobalEnums.GemType.bomb:
                 if (matchDetector == null)
                 {
-                    Debug.LogError("MatchDetector is required for BombSpecialAbility!");
+                    GameLogger.LogError("MatchDetector is required for BombSpecialAbility!");
                     return null;
                 }
                 return new BombSpecialAbility(gameBoard, gem, eventBus);

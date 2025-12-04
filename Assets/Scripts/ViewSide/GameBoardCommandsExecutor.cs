@@ -12,7 +12,7 @@ public class GameBoardCommandsExecutor
 
     public void AddCommand(IGameBoardCommand command)
     {
-        Debug.Log($"<color=green>[Command] Added Command '{command.Name}' to queue. Details:\n {command.Details} </color>");
+        GameLogger.Log($"<color=green>[Command] Added Command '{command.Name}' to queue. Details:\n {command.Details} </color>");
         commands.Enqueue(command);
         if (!isExecuting) {
             Execute();
@@ -24,9 +24,9 @@ public class GameBoardCommandsExecutor
         isExecuting = true;
         while (true) {
             var command = commands.Dequeue();
-            Debug.Log($"[Command] Executing {command.Name}");
+            GameLogger.Log($"[Command] Executing {command.Name}");
             await command.ExecuteAsync();
-            Debug.Log($"[Command] Executing finished {command.Name}");
+            GameLogger.Log($"[Command] Executing finished {command.Name}");
             if (commands.Count == 0) {
                 break;
             }

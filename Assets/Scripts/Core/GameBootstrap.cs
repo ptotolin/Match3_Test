@@ -26,6 +26,7 @@ public class GameBootstrap : MonoBehaviour
         matchDetector = new MatchDetector(gameBoard);
         eventBus = new EventBus();
         GameBoardSetup(gemGenerator);
+        GameLogger.IsEnabled = false;
         
         // Create phase
         gameLogic = Instantiate(gameLogicPrefab);

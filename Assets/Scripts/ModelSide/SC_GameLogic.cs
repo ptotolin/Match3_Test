@@ -122,7 +122,7 @@ public class SC_GameLogic : MonoBehaviour
             if (!gem1.IsMatch && !gem2.IsMatch && 
                 (gem1.SpecialAbility == null && gem2.SpecialAbility == null))
             {
-                Debug.Log($"[Client] Swap back ({gem1Pos}, {gem2Pos})");
+                GameLogger.Log($"[Client] Swap back ({gem1Pos}, {gem2Pos})");
                 gameBoard.InvokeBatchStart();
                 // swap back
                 gameBoard.SwapGems(gem2Pos, gem1Pos);
@@ -156,14 +156,15 @@ public class SC_GameLogic : MonoBehaviour
         // (but place the bomb AFTER destruction)
         //bool shouldPlaceBomb = matchDetector.HasMatchOfFourOrMoreInSwapPosition(lastSwapPos1, lastSwapPos2, out Vector2Int bombPosition);
         Vector2Int bombPosition;
-        bool shouldPlaceBomb = swapHappened ? matchDetector.HasMatchOfFourOrMoreInSwapPosition(lastSwapPos1, lastSwapPos2, out bombPosition) : 
+        bool shouldPlaceBomb = swapHappened ? 
+            matchDetector.HasMatchOfFourOrMoreInSwapPosition(lastSwapPos1, lastSwapPos2, out bombPosition) : 
             matchDetector.HasMatchOfFourOrMore(out bombPosition);
 
         // TODO: We may form matches here like Match3, Match4, Match5
-        Debug.Log($"<color=white>Matches count:{matchDetector.CurrentMatches.Count}</color>");
+        GameLogger.Log($"<color=white>Matches count:{matchDetector.CurrentMatches.Count}</color>");
         foreach (var match in matchDetector.CurrentMatches) {
             gameBoard.TryGetGemPos(match, out var gemPos);
-            Debug.Log($"<color=yellow>[DELETE] {match} at {gemPos}</color>");
+            GameLogger.Log($"<color=yellow>[DELETE] {match} at {gemPos}</color>");
         }
         
         gemsMarkedForAbilityActivation.Clear();
@@ -184,7 +185,7 @@ public class SC_GameLogic : MonoBehaviour
                     // Regular gem - remove and count points
                     ScoreCheck(gem);
                     if (gameBoard.TryGetGemPos(gem, out var gemPos)) {
-                        Debug.Log($"<color=white>Match {gemPos}</color>");
+                        GameLogger.Log($"<color=white>Match {gemPos}</color>");
                         gameBoard.DestroyGem(gemPos);
                     }
                 }
@@ -207,7 +208,7 @@ public class SC_GameLogic : MonoBehaviour
             );
             
             gameBoard.SetGem(bombPosition.x, bombPosition.y, bombGem, GlobalEnums.GemSpawnType.Instant);
-            Debug.Log($"<color=red>BOMB placed at ({bombPosition.x}, {bombPosition.y}) after 4+ match!</color>");
+            GameLogger.Log($"<color=red>BOMB placed at ({bombPosition.x}, {bombPosition.y}) after 4+ match!</color>");
         }
         gameBoard.InvokeBatchEnd();
         
@@ -274,7 +275,7 @@ public class SC_GameLogic : MonoBehaviour
                     // Check that the gem is still on the board (not removed during fall)
                     if (gameBoard.TryGetGemPos(gem, out var gemPos))
                     {
-                        Debug.Log($"<color=orange>Activating ability '{gem.SpecialAbility.AbilityType}' for gem at ({gemPos.x}, {gemPos.y})</color>");
+                        GameLogger.Log($"<color=orange>Activating ability '{gem.SpecialAbility.AbilityType}' for gem at ({gemPos.x}, {gemPos.y})</color>");
                         gem.SpecialAbility.Execute();
                     }
                 }

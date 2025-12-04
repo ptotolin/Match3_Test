@@ -39,7 +39,7 @@ public class MoveGemCommand : IGameBoardCommand
     
     public async Task ExecuteAsync()
     {
-        Debug.Log($"===== Started executing ======");
+        GameLogger.Log($"===== Started executing ======");
         var destinationPoint = cellModelToWorldConverter.Convert(destPos);
         var timer = 0.0f;
         var gemView = gameBoardPresenter.GetGemView(gem);
@@ -53,7 +53,7 @@ public class MoveGemCommand : IGameBoardCommand
             gemViewTransform.position = startPos + normalizedTime * moveVec;
             await Task.Yield();
         }
-        Debug.Log($"===== Ended executing ======");
+        GameLogger.Log($"===== Ended executing ======");
 
         gemViewTransform.position = destinationPoint;
         

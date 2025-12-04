@@ -35,12 +35,12 @@ public class GameBoardEventsAdapter
     public void AddGlobalCommand(IGameBoardCommand command)
     {
         if (batchRounds.Count == 0) {
-            Debug.LogError($"Can't start command since no round found!");
+            GameLogger.LogError($"Can't start command since no round found!");
             return;
         }
         
         var currentRound = batchRounds[^1];
-        Debug.Log($"<color=green>[Command] Added Command '{command.Name}' to queue of batch round #{currentRound.Number}. Details:\n {command.Details} </color>");
+        GameLogger.Log($"<color=green>[Command] Added Command '{command.Name}' to queue of batch round #{currentRound.Number}. Details:\n {command.Details} </color>");
         
         
         currentRound.Commands.Add(command);
@@ -48,7 +48,7 @@ public class GameBoardEventsAdapter
 
     public void AddColumnCommand(IGameBoardCommand command, int column)
     {
-        Debug.Log($"<color=green>[COLUMN_COMMAND:{column}] Added Command '{command.Name}' to queue. Details:\n {command.Details} </color>");
+        GameLogger.Log($"<color=green>[COLUMN_COMMAND:{column}] Added Command '{command.Name}' to queue. Details:\n {command.Details} </color>");
         var currentRound = batchRounds[^1];
         if (!currentRound.ColumnCommands.TryGetValue(column, out var queue))
         {
@@ -67,11 +67,11 @@ public class GameBoardEventsAdapter
         executing = true;
         var currentRound = batchRounds[0];
         batchRounds.RemoveAt(0);
-        Debug.Log($"<color=cyan>Executing round #{currentRound.Number}!</color>");
+        GameLogger.Log($"<color=cyan>Executing round #{currentRound.Number}!</color>");
         
         // 1. Execute all global commands
         foreach (var globalCommand in currentRound.Commands) {
-            Debug.Log($"<color=cyan>Executing global command {globalCommand.Name}. Details: {globalCommand.Details}</color>");
+            GameLogger.Log($"<color=cyan>Executing global command {globalCommand.Name}. Details: {globalCommand.Details}</color>");
             await globalCommand.ExecuteAsync();
         }
         
@@ -110,7 +110,7 @@ public class GameBoardEventsAdapter
 
         await Task.WhenAll(allColumnTasks);
         
-        Debug.Log($"<color=cyan>^^^^^^^ FINISHED Executing round #{currentRound.Number}! ^^^^^^^^ </color>");
+        GameLogger.Log($"<color=cyan>^^^^^^^ FINISHED Executing round #{currentRound.Number}! ^^^^^^^^ </color>");
         if (batchRounds.Count > 0) {
             executing = false;
             FlushCommands();
@@ -143,7 +143,7 @@ public class GameBoardEventsAdapter
     {
         BatchRound batchRound = new BatchRound() {Number = roundNum++};
         batchRounds.Add(batchRound);
-        Debug.Log($"<color=cyan>------- Round #{batchRound.Number} enqueued. Rounds in QUEUE: {batchRounds.Count} ---------</color>");
+        GameLogger.Log($"<color=cyan>------- Round #{batchRound.Number} enqueued. Rounds in QUEUE: {batchRounds.Count} ---------</color>");
     }
 
     private void OnBatchEnded()
@@ -151,7 +151,7 @@ public class GameBoardEventsAdapter
         if (!executing) {
             var curRound = batchRounds[^1];
             FlushCommands();
-            Debug.Log($"<color=cyan>---------- Round #{curRound.Number} ended. Rounds in queue -----------</color>");
+            GameLogger.Log($"<color=cyan>---------- Round #{curRound.Number} ended. Rounds in queue -----------</color>");
         }
     }
 }

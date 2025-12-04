@@ -31,7 +31,7 @@ public class MarkGemForActivationCommand : IGameBoardCommand
         {
             // TODO: Show visual effect for marking (e.g., pulse, glow, etc.)
             // gemView.ShowActivationMark();
-            Debug.Log($"<color=yellow>Visual: Gem at {gemPos} marked for {abilityType} activation</color>");
+            GameLogger.Log($"<color=yellow>Visual: Gem at {gemPos} marked for {abilityType} activation</color>");
         }
         await Task.Yield();
     }

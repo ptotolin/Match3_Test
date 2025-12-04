@@ -33,7 +33,7 @@ public class DestroyGemCommand : IGameBoardCommand
             pooledObject.Despawn();
         }
         else {
-            Debug.LogWarning($"Object {gemView.gameObject.name} is not pooled (doesn't have PooledObject component)");
+            GameLogger.LogWarning($"Object {gemView.gameObject.name} is not pooled (doesn't have PooledObject component)");
             GameObject.Destroy(gemView.gameObject);
         }
         
