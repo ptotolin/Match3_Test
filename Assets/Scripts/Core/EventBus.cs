@@ -5,7 +5,7 @@ public class EventBus : IEventBus
 {
     private Dictionary<Type, Delegate> handlers = new();
 
-    public void Publish<T>(T eventData) where T : ISpecialAbilityEventData
+    public void Publish<T>(T eventData)
     {
         Type eventType = typeof(T);
 
@@ -14,7 +14,7 @@ public class EventBus : IEventBus
         }
     }
     
-    public void Subscribe<T>(Action<T> handler) where T : ISpecialAbilityEventData
+    public void Subscribe<T>(Action<T> handler)
     {
         Type eventType = typeof(T);
 
@@ -25,7 +25,7 @@ public class EventBus : IEventBus
         handlers[eventType] = (Action<T>)handlers[eventType] + handler;
     }
 
-    public void Unsubscribe<T>(Action<T> handler) where T : ISpecialAbilityEventData
+    public void Unsubscribe<T>(Action<T> handler)
     {
         Type eventType = typeof(T);
 

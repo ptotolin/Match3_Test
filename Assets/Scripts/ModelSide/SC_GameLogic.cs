@@ -17,8 +17,18 @@ public class SC_GameLogic : MonoBehaviour
     private Vector2Int lastSwapPos1;
     private Vector2Int lastSwapPos2;
     
-    // move outside
-    private float displayScore = 0;
+    public int Score {
+        get => score;
+        set {
+            if (score != value) {
+                eventBus.Publish<ScoreEventData>(new ScoreEventData()
+                {
+                    ScoreOld = score, ScoreNew = value
+                });
+                score = value;
+            }
+        }
+    }
     
     #region MonoBehaviour
     private void OnEnable()
@@ -41,11 +51,6 @@ public class SC_GameLogic : MonoBehaviour
         if (eventBus != null) {
             eventBus.Unsubscribe<SpecialGemsAffectedEventData>(OnSpecialGemAffected);
         }
-    }
-
-    private void Start()
-    {
-        StartGame();
     }
 
     public void Initialize(
@@ -71,22 +76,10 @@ public class SC_GameLogic : MonoBehaviour
             gemsAwaitingActivation.AddRange(eventData.AffectedSpecialGems);
         }
     }
-
-    // private void Update()
-    // {
-    //     // TODO: Put to UI
-    //     displayScore = Mathf.Lerp(displayScore, gameBoard.Score, SC_GameVariables.Instance.scoreSpeed * Time.deltaTime);
-    //     unityObjects["Txt_Score"].GetComponent<TMPro.TextMeshProUGUI>().text = displayScore.ToString("0");
-    // }
+    
     #endregion
 
     #region Logic
-    
-    public void StartGame()
-    {
-        // TODO: Add UpdateScoreMethod and move it to GameBoardPresenter somehow
-        //unityObjects["Txt_Score"].GetComponent<TextMeshProUGUI>().text = score.ToString("0");
-    }
     
     private SC_Gem GetGem(int _X, int _Y)
     {
@@ -95,7 +88,7 @@ public class SC_GameLogic : MonoBehaviour
 
     private void ScoreCheck(SC_Gem gemToCheck)
     {
-        gameBoard.Score += gemToCheck.ScoreValue;
+        Score += gemToCheck.ScoreValue;
     }
     
     private void OnSwipe(Vector2Int gem1Pos, Vector2Int gem2Pos)

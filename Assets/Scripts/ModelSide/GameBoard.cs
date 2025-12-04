@@ -23,12 +23,6 @@ public class GameBoard : IGameBoardReader
 
     public int Width => width;
 
-    // TODO: Remove score from here
-    public int Score {
-        get => score;
-        set => score = value;
-    }
-
     public GameBoard(int _Width, int _Height)
     {
         height = _Height;
