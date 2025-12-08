@@ -46,10 +46,18 @@ public class SpawnGemCommand : IGameBoardCommand
     
     public async Task ExecuteAsync()
     {
-        //var gemView = GameObject.Instantiate(gemViewPrefab, gemViewPos, Quaternion.identity);
         var gemView = ObjectPool.Instance.Spawn<SC_GemView>(gemViewPrefab.gameObject, gemViewPos, Quaternion.identity);
         gemView.transform.SetParent(gemsHolder);
         gemView.name = "Gem - " + gemPos.x + ", " + gemPos.y;
+        
+        // TODO: not quite sure if it is a good idea to have that knowledge here
+        // possibly we need to get that knowledge outside
+        var coloredBombComponent = gem.GetComponent<ColoredBombComponent>();
+        if (coloredBombComponent != null)
+        {
+            gemView.SetMatchColor(coloredBombComponent.MatchColor);
+        }
+        
         gameBoardPresenter.RegisterGemView(gem, gemView);
         await Task.Yield();
     }

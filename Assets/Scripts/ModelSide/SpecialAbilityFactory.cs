@@ -10,7 +10,7 @@ public static class SpecialAbilityFactory
         GameBoard gameBoard, 
         SC_Gem gem,
         IEventBus eventBus,
-        MatchDetector matchDetector = null)
+        MatchDetector matchDetector)
     {
         switch (gemType)
         {
@@ -20,7 +20,7 @@ public static class SpecialAbilityFactory
                     GameLogger.LogError("MatchDetector is required for BombSpecialAbility!");
                     return null;
                 }
-                return new BombSpecialAbility(gameBoard, gem, eventBus);
+                return new BombSpecialAbility(gameBoard, matchDetector, gem, eventBus);
             
             default:
                 return null; // Regular gems have no ability

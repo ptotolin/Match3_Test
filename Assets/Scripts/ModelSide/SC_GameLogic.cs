@@ -116,31 +116,54 @@ public class SC_GameLogic : MonoBehaviour
                 (gem1.SpecialAbility == null && gem2.SpecialAbility == null))
             {
                 GameLogger.Log($"[Client] Swap back ({gem1Pos}, {gem2Pos})");
-                gameBoard.InvokeBatchStart();
-                // swap back
-                gameBoard.SwapGems(gem2Pos, gem1Pos);
-                gameBoard.InvokeBatchEnd();
+                SwapBack(gem1Pos, gem2Pos);
             }
             else 
             {
-                if (gem1.SpecialAbility != null) {
+                if (gem1.SpecialAbility != null && gem2.SpecialAbility != null) {
                     gameBoard.InvokeBatchStart();
                     gem1.SpecialAbility.Execute();
-                    gameBoard.InvokeBatchEnd();
-                }
-                
-                if (gem2.SpecialAbility != null) {
-                    gameBoard.InvokeBatchStart();
                     gem2.SpecialAbility.Execute();
                     gameBoard.InvokeBatchEnd();
                 }
-                
+                else {
+                    if (gem1.SpecialAbility != null) {
+                        if (gem1.IsMatch || matchDetector.CanGemsMatch(gem1, gem2)) {
+                            gameBoard.InvokeBatchStart();
+                            gem1.SpecialAbility.Execute();
+                            gameBoard.InvokeBatchEnd();
+                        }
+                        else {
+                            SwapBack(gem1Pos, gem2Pos);
+                        }
+                    }
+
+                    if (gem2.SpecialAbility != null) {
+                        if (gem2.IsMatch || matchDetector.CanGemsMatch(gem1, gem2)) {
+                            gameBoard.InvokeBatchStart();
+                            gem2.SpecialAbility.Execute();
+                            gameBoard.InvokeBatchEnd();
+                        }
+                        else {
+                            SwapBack(gem1Pos, gem2Pos);
+                        }
+                    }
+                }
+
                 DestroyMatches();
                 swapHappened = false;
             }
         }
     }
-    
+
+    private void SwapBack(Vector2Int gem1Pos, Vector2Int gem2Pos)
+    {
+        gameBoard.InvokeBatchStart();
+        // swap back
+        gameBoard.SwapGems(gem2Pos, gem1Pos);
+        gameBoard.InvokeBatchEnd();
+    }
+
     private void DestroyMatches()
     {
         gameBoard.InvokeBatchStart();
@@ -149,9 +172,10 @@ public class SC_GameLogic : MonoBehaviour
         // (but place the bomb AFTER destruction)
         //bool shouldPlaceBomb = matchDetector.HasMatchOfFourOrMoreInSwapPosition(lastSwapPos1, lastSwapPos2, out Vector2Int bombPosition);
         Vector2Int bombPosition;
+        GlobalEnums.GemType bombType = GlobalEnums.GemType.blue;
         bool shouldPlaceBomb = swapHappened ? 
-            matchDetector.HasMatchOfFourOrMoreInSwapPosition(lastSwapPos1, lastSwapPos2, out bombPosition) : 
-            matchDetector.HasMatchOfFourOrMore(out bombPosition);
+            matchDetector.HasMatchOfFourOrMoreInSwapPosition(lastSwapPos1, lastSwapPos2, out bombPosition, out bombType) : 
+            matchDetector.HasMatchOfFourOrMore(out bombPosition, out bombType);
 
         // TODO: We may form matches here like Match3, Match4, Match5
         GameLogger.Log($"<color=white>Matches count:{matchDetector.CurrentMatches.Count}</color>");
@@ -192,6 +216,7 @@ public class SC_GameLogic : MonoBehaviour
         if (shouldPlaceBomb)
         {
             var bombGem = SC_GameVariables.Instance.bomb.Clone();
+            bombGem.AddComponent(new ColoredBombComponent(bombType));
             bombGem.SpecialAbility = SpecialAbilityFactory.CreateAbility(
                 GlobalEnums.GemType.bomb,
                 gameBoard,

@@ -208,50 +208,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &148701741
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 148701743}
-  - component: {fileID: 148701742}
-  m_Layer: 0
-  m_Name: ObjectPool
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &148701742
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 148701741}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 75703930574c6459e90f117cf3d64849, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!4 &148701743
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 148701741}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_RootOrder: 4
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &259844896
 GameObject:
   m_ObjectHideFlags: 0
@@ -516,36 +472,43 @@ MonoBehaviour:
     type: 3}
   bomb:
     type: 5
+    score: 0
   GemsInfo:
   - GemView: {fileID: 2259138850248276554, guid: 724e93e48c6cc0b4ab3d44e5ea34f2ec,
       type: 3}
     Gem:
       type: 0
+      score: 5
   - GemView: {fileID: 1572150575748280163, guid: 784323496d719684cb6201b200b95864,
       type: 3}
     Gem:
       type: 1
+      score: 5
   - GemView: {fileID: 9059461560977941114, guid: 473855e3d0d3c8143836b678c9a1b8b5,
       type: 3}
     Gem:
       type: 2
+      score: 5
   - GemView: {fileID: 3611050404593230509, guid: 91ba2370328500d4db689dad894b1602,
       type: 3}
     Gem:
       type: 3
+      score: 5
   - GemView: {fileID: 2438798099619290631, guid: 93bd623174244c047af9ce43cc254c32,
       type: 3}
     Gem:
       type: 4
+      score: 5
   - GemView: {fileID: 7345907548859263854, guid: aa0291e650b382941875040db9e8a232,
       type: 3}
     Gem:
       type: 5
+      score: 100
   bonusAmount: 0.5
   bombChance: 3
   dropHeight: 1
   gemSpeed: 7
-  scoreSpeed: 5
+  scoreSpeed: 20
   rowsSize: 7
   colsSize: 7
 --- !u!1 &1450061018

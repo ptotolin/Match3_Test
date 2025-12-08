@@ -34,7 +34,8 @@ public class MatchDetector
                     //checking no empty spots
                     if (leftGem != null && rightGem != null) {
                         //Match
-                        if (leftGem.Type == currentGem.Type && rightGem.Type == currentGem.Type) {
+                        if (CanGemsMatch(leftGem, currentGem) && 
+                            CanGemsMatch(rightGem, currentGem)) {
                             currentGem.IsMatch = true;
                             leftGem.IsMatch = true;
                             rightGem.IsMatch = true;
@@ -51,7 +52,8 @@ public class MatchDetector
                     //checking no empty spots
                     if (aboveGem != null && bellowGem != null) {
                         //Match
-                        if (aboveGem.Type == currentGem.Type && bellowGem.Type == currentGem.Type) {
+                        if (CanGemsMatch(aboveGem, currentGem) && 
+                            CanGemsMatch(bellowGem, currentGem)) {
                             currentGem.IsMatch = true;
                             aboveGem.IsMatch = true;
                             bellowGem.IsMatch = true;
@@ -67,75 +69,174 @@ public class MatchDetector
         if (currentMatches.Count > 0)
             currentMatches = currentMatches.Distinct().ToList();
     }
-    // public void CheckForBombs()
-    // {
-    //     for (int i = 0; i < currentMatches.Count; i++) {
-    //         SC_Gem gem = currentMatches[i];
-    //         gameBoard.TryGetGemPos(gem, out var gemPos);
-    //         int x = gemPos.x;
-    //         int y = gemPos.y;
-    //
-    //         if (x > 0) {
-    //             if (gameBoard.GetGem(x - 1, y) != null && gameBoard.GetGem(x - 1, y).Type == GlobalEnums.GemType.bomb)
-    //                 MarkBombArea(new Vector2Int(x - 1, y), gameBoard.GetGem(x - 1, y).BlastSize);
-    //         }
-    //
-    //         if (x + 1 < gameBoard.Width) {
-    //             if (gameBoard.GetGem(x + 1, y) != null && gameBoard.GetGem(x + 1, y).Type == GlobalEnums.GemType.bomb)
-    //                 MarkBombArea(new Vector2Int(x + 1, y), gameBoard.GetGem(x + 1, y).BlastSize);
-    //         }
-    //
-    //         if (y > 0) {
-    //             if (gameBoard.GetGem(x, y - 1) != null && gameBoard.GetGem(x, y - 1).Type == GlobalEnums.GemType.bomb)
-    //                 MarkBombArea(new Vector2Int(x, y - 1), gameBoard.GetGem(x, y - 1).BlastSize);
-    //         }
-    //
-    //         if (gemPos.y + 1 < gameBoard.Height) {
-    //             if (gameBoard.GetGem(x, y + 1) != null && gameBoard.GetGem(x, y + 1).Type == GlobalEnums.GemType.bomb)
-    //                 MarkBombArea(new Vector2Int(x, y + 1), gameBoard.GetGem(x, y + 1).BlastSize);
-    //         }
-    //     }
-    // }
-    //
-    // public void MarkBombArea(Vector2Int bombPos, int _BlastSize)
-    // {
-    //     string _print = "";
-    //     for (int x = bombPos.x - _BlastSize; x <= bombPos.x + _BlastSize; x++) {
-    //         for (int y = bombPos.y - _BlastSize; y <= bombPos.y + _BlastSize; y++) {
-    //             if (x >= 0 && x < gameBoard.Width && y >= 0 && y < gameBoard.Height) {
-    //                 if (gameBoard.GetGem(x, y) != null) {
-    //                     _print += "(" + x + "," + y + ")" + System.Environment.NewLine;
-    //                     gameBoard.GetGem(x, y).IsMatch = true;
-    //                     currentMatches.Add(gameBoard.GetGem(x, y));
-    //                 }
-    //             }
-    //         }
-    //     }
-    //
-    //     currentMatches = currentMatches.Distinct().ToList();
-    // }
-    //
-
+    
     /// <summary>
     /// Checks if placing a gem at the specified position will create a match
     /// </summary>
-    public bool MatchesAt(Vector2Int _PositionToCheck, SC_Gem _GemToCheck)
+    public bool MatchesAt(Vector2Int checkPosition, SC_Gem gemToCheck)
     {
-        if (_PositionToCheck.x > 1) {
-            if (gameBoard.GetGem(_PositionToCheck.x - 1, _PositionToCheck.y).Type == _GemToCheck.Type &&
-                gameBoard.GetGem(_PositionToCheck.x - 2, _PositionToCheck.y).Type == _GemToCheck.Type) {
+        if (checkPosition.x > 1) {
+            var gem1 = gameBoard.GetGem(checkPosition.x - 1, checkPosition.y);
+            var gem2 = gameBoard.GetGem(checkPosition.x - 2, checkPosition.y);
+            if (CanGemsMatch(gem1, gemToCheck) &&
+                CanGemsMatch(gem2, gemToCheck)) {
                 return true;
             }
         }
 
-        if (_PositionToCheck.y > 1) {
-            if (gameBoard.GetGem(_PositionToCheck.x, _PositionToCheck.y - 1).Type == _GemToCheck.Type &&
-                gameBoard.GetGem(_PositionToCheck.x, _PositionToCheck.y - 2).Type == _GemToCheck.Type) {
+        if (checkPosition.y > 1) {
+            var gem1 = gameBoard.GetGem(checkPosition.x, checkPosition.y - 1);
+            var gem2 = gameBoard.GetGem(checkPosition.x, checkPosition.y - 2);
+            if (CanGemsMatch(gem1, gemToCheck) &&
+                CanGemsMatch(gem2, gemToCheck)) {
                 return true;
             }
         }
 
         return false;
+    }
+    
+    public bool HasMatchOfFourOrMore(out Vector2Int bombPosition, out GlobalEnums.GemType matchedGemType)
+    {
+        matchedGemType = GlobalEnums.GemType.blue;
+        bombPosition = Vector2Int.zero;
+        List<MatchGroup> matchGroups = FindMatchesOfFourOrMore();
+
+        if (matchGroups.Count == 0)
+            return false;
+
+        // Find the largest match group
+        MatchGroup largestGroup = matchGroups[0];
+        foreach (var group in matchGroups)
+        {
+            if (group.Count > largestGroup.Count)
+            {
+                largestGroup = group;
+            }
+        }
+
+        // Choose bomb position: take first position from the group (guaranteed to exist)
+        // This is similar to how swap position works - it's a real position from the match
+        if (largestGroup.Positions.Count > 0)
+        {
+            bombPosition = largestGroup.Positions[0];
+            var gem = gameBoard.GetGem(bombPosition.x, bombPosition.y);
+            matchedGemType = gem.Type;
+            return true;
+        }
+
+        return false;
+    }
+
+
+    /// <summary>
+    /// Checks if the swap position participates in a match of 4+ (without placing a bomb)
+    /// </summary>
+    /// <returns>true if a match of 4+ is found, and returns the position for the bomb</returns>
+    public bool HasMatchOfFourOrMoreInSwapPosition(Vector2Int swapPos1, Vector2Int swapPos2,
+        out Vector2Int bombPosition, out GlobalEnums.GemType matchedGemType)
+    {
+        matchedGemType = GlobalEnums.GemType.blue;
+        bombPosition = Vector2Int.zero;
+        List<MatchGroup> matchGroups = FindMatchesOfFourOrMore();
+
+        if (matchGroups.Count == 0)
+            return false;
+
+        int maxGroupSize = 0;
+
+        foreach (var group in matchGroups) {
+            // Check if the group contains the swap position
+            bool containsPos1 = group.Positions.Contains(swapPos1);
+            bool containsPos2 = group.Positions.Contains(swapPos2);
+
+            if (containsPos1 || containsPos2) {
+                // Select the swap position with the largest group
+                if (containsPos1 && group.Count > maxGroupSize) {
+                    bombPosition = swapPos1;
+                    maxGroupSize = group.Count;
+                }
+                else if (containsPos2 && group.Count > maxGroupSize) {
+                    bombPosition = swapPos2;
+                    maxGroupSize = group.Count;
+                }
+            }
+        }
+
+        matchedGemType = gameBoard.GetGem(bombPosition.x, bombPosition.y).Type;
+        return maxGroupSize >= 4;
+    }
+
+    /// <summary>
+    /// Generates cross pattern for bomb explosion (13 cells: 3x3 + 4 cardinal directions)
+    /// Pattern:
+    ///      x
+    ///      x
+    /// x x x B x x x
+    ///      x
+    ///      x
+    /// </summary>
+    public List<Vector2Int> GetBombCrossPattern(Vector2Int bombPos)
+    {
+        List<Vector2Int> pattern = new List<Vector2Int>();
+
+        // Add bomb position itself
+        pattern.Add(bombPos);
+
+        // Add 3x3 square neighbors (8 cells around bomb)
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dy = -1; dy <= 1; dy++) {
+                if (dx == 0 && dy == 0) continue; // Skip bomb position
+
+                Vector2Int pos = new Vector2Int(bombPos.x + dx, bombPos.y + dy);
+                if (IsValidPosition(pos)) {
+                    pattern.Add(pos);
+                }
+            }
+        }
+
+        // Add 4 cells 2 steps away in cardinal directions
+        Vector2Int[] cardinalDirections = new Vector2Int[]
+        {
+            new Vector2Int(0, -2), // up
+            new Vector2Int(0, 2), // down
+            new Vector2Int(-2, 0), // left
+            new Vector2Int(2, 0) // right
+        };
+
+        foreach (var offset in cardinalDirections) {
+            Vector2Int pos = bombPos + offset;
+            if (IsValidPosition(pos)) {
+                pattern.Add(pos);
+            }
+        }
+
+        return pattern;
+    }
+
+    public bool CanGemsMatch(SC_Gem gem1, SC_Gem gem2)
+    {
+        if (gem1 == null || gem2 == null) return false;
+
+        var colored1 = gem1.GetComponent<ColoredBombComponent>();
+        var colored2 = gem2.GetComponent<ColoredBombComponent>();
+
+        // Bomb & bomb
+        if (colored1 != null && colored2 != null) {
+            return colored1.MatchColor == colored2.MatchColor;
+        }
+
+        // Bomb & non-bomb
+        if (colored1 != null && gem1.Type == GlobalEnums.GemType.bomb) {
+            return colored1.MatchColor == gem2.Type;
+        }
+
+        if (colored2 != null && gem2.Type == GlobalEnums.GemType.bomb) {
+            return colored2.MatchColor == gem1.Type;
+        }
+
+        // ordinary gems
+        return gem1.Type == gem2.Type;
     }
 
     /// <summary>
@@ -373,119 +474,6 @@ public class MatchDetector
         }
 
         return matchGroups;
-    }
-    
-    public bool HasMatchOfFourOrMore(out Vector2Int bombPosition)
-    {
-        bombPosition = Vector2Int.zero;
-        List<MatchGroup> matchGroups = FindMatchesOfFourOrMore();
-
-        if (matchGroups.Count == 0)
-            return false;
-
-        // Find the largest match group
-        MatchGroup largestGroup = matchGroups[0];
-        foreach (var group in matchGroups)
-        {
-            if (group.Count > largestGroup.Count)
-            {
-                largestGroup = group;
-            }
-        }
-
-        // Choose bomb position: take first position from the group (guaranteed to exist)
-        // This is similar to how swap position works - it's a real position from the match
-        if (largestGroup.Positions.Count > 0)
-        {
-            bombPosition = largestGroup.Positions[0];
-            return true;
-        }
-
-        return false;
-    }
-
-
-    /// <summary>
-    /// Checks if the swap position participates in a match of 4+ (without placing a bomb)
-    /// </summary>
-    /// <returns>true if a match of 4+ is found, and returns the position for the bomb</returns>
-    public bool HasMatchOfFourOrMoreInSwapPosition(Vector2Int swapPos1, Vector2Int swapPos2,
-        out Vector2Int bombPosition)
-    {
-        bombPosition = Vector2Int.zero;
-        List<MatchGroup> matchGroups = FindMatchesOfFourOrMore();
-
-        if (matchGroups.Count == 0)
-            return false;
-
-        int maxGroupSize = 0;
-
-        foreach (var group in matchGroups) {
-            // Check if the group contains the swap position
-            bool containsPos1 = group.Positions.Contains(swapPos1);
-            bool containsPos2 = group.Positions.Contains(swapPos2);
-
-            if (containsPos1 || containsPos2) {
-                // Select the swap position with the largest group
-                if (containsPos1 && group.Count > maxGroupSize) {
-                    bombPosition = swapPos1;
-                    maxGroupSize = group.Count;
-                }
-                else if (containsPos2 && group.Count > maxGroupSize) {
-                    bombPosition = swapPos2;
-                    maxGroupSize = group.Count;
-                }
-            }
-        }
-
-        return maxGroupSize >= 4;
-    }
-
-    /// <summary>
-    /// Generates cross pattern for bomb explosion (13 cells: 3x3 + 4 cardinal directions)
-    /// Pattern:
-    ///      x
-    ///      x
-    /// x x x B x x x
-    ///      x
-    ///      x
-    /// </summary>
-    public List<Vector2Int> GetBombCrossPattern(Vector2Int bombPos)
-    {
-        List<Vector2Int> pattern = new List<Vector2Int>();
-
-        // Add bomb position itself
-        pattern.Add(bombPos);
-
-        // Add 3x3 square neighbors (8 cells around bomb)
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dy = -1; dy <= 1; dy++) {
-                if (dx == 0 && dy == 0) continue; // Skip bomb position
-
-                Vector2Int pos = new Vector2Int(bombPos.x + dx, bombPos.y + dy);
-                if (IsValidPosition(pos)) {
-                    pattern.Add(pos);
-                }
-            }
-        }
-
-        // Add 4 cells 2 steps away in cardinal directions
-        Vector2Int[] cardinalDirections = new Vector2Int[]
-        {
-            new Vector2Int(0, -2), // up
-            new Vector2Int(0, 2), // down
-            new Vector2Int(-2, 0), // left
-            new Vector2Int(2, 0) // right
-        };
-
-        foreach (var offset in cardinalDirections) {
-            Vector2Int pos = bombPos + offset;
-            if (IsValidPosition(pos)) {
-                pattern.Add(pos);
-            }
-        }
-
-        return pattern;
     }
 
     private bool IsValidPosition(Vector2Int pos)
