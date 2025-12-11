@@ -102,7 +102,7 @@ public class GemInputHandler : MonoBehaviour
         {
             EventSwipeDetected?.Invoke(firstGemPos, new Vector2Int(firstGemPos.x, firstGemPos.y - 1));
         }
-        else if (swipeAngle > 135 || swipeAngle < -135 && firstGemPos.x > 0)
+        else if ((swipeAngle > 135 || swipeAngle < -135) && firstGemPos.x > 0)
         {
             EventSwipeDetected?.Invoke(firstGemPos, new Vector2Int(firstGemPos.x - 1, firstGemPos.y));
         }

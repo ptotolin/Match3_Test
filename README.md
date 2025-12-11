@@ -27,13 +27,26 @@ Assets/Scripts/
 │
 ├── ModelSide/                     # Model layer (pure business logic)
 │   ├── GameBoard.cs              # Game board - state storage
-│   ├── SC_Gem.cs                 # Gem model
+│   ├── SC_Gem.cs                 # Gem model with component system
 │   ├── SC_GameLogic.cs           # Main game logic
+│   ├── GameState.cs              # Shared mutable game state
 │   ├── MatchDetector.cs          # Match detection service
 │   ├── DistinctGemGenerator.cs   # Safe gem generation
 │   ├── BombSpecialAbility.cs     # Bomb ability
+│   ├── IPhaseState.cs            # Phase state interface
+│   ├── PhaseContext.cs           # Phase execution and transitions
+│   ├── MatchPhaseState.cs        # Match detection phase
+│   ├── DestroyPhaseState.cs      # Gem destruction phase
+│   ├── FillBoardPhaseState.cs    # Board filling phase
+│   ├── StablePhaseState.cs       # Stable state phase
+│   ├── IGemComponent.cs          # Gem component interface
+│   ├── IGemPhaseBehavior.cs      # Phase-aware component interface
+│   ├── BombPhaseBehavior.cs      # Bomb phase behavior component
+│   ├── ColoredBombComponent.cs   # Colored bomb component
 │   └── EventBusEvents/           # Model events
 │       ├── BombExplosionEventData.cs
+│       ├── PhaseEnteredEventData.cs
+│       ├── PhaseExitedEventData.cs
 │       └── SpecialGemsAffectedEventData.cs
 │
 └── ViewSide/                      # View layer (visualization)
@@ -57,8 +70,10 @@ Assets/Scripts/
 **Model (ModelSide)**:
 - Pure C# logic without Unity dependencies
 - `GameBoard` - stores game board state
-- `SC_GameLogic` - manages game flow
-- `SC_Gem` - simple gem data model
+- `GameState` - shared mutable state across phases
+- `SC_GameLogic` - manages game flow and phase transitions
+- `SC_Gem` - gem data model with component system
+- `IPhaseState` implementations - phase-specific game logic
 
 **View (ViewSide)**:
 - Unity-specific components (MonoBehaviour)
@@ -140,10 +155,17 @@ interface IGemSpecialAbility
 **Implementations**:
 - `BombSpecialAbility` - explodes gems in cross pattern
 
+**Component System**:
+Gems can have components that extend their behavior:
+- `IGemComponent` - base interface for gem components
+- `IGemPhaseBehavior` - phase-aware behavior components
+- `BombPhaseBehavior` - handles delayed/immediate bomb explosions based on phase
+- `ColoredBombComponent` - stores the color a bomb matches with
+
 **Activation**:
-1. On match, gem with ability is marked
-2. After fall and refill, ability activates
-3. EventBus publishes event for visualization
+- **On Swap**: Abilities activate immediately in `IsSwapProcessed()`
+- **On Match**: Abilities activate based on phase behavior (see Delayed Bomb Explosions section)
+- EventBus publishes events for visualization
 
 ### 6. EventBus for Inter-Module Communication
 
@@ -209,6 +231,133 @@ All logging goes through `GameLogger`:
 ```csharp
 GameLogger.IsEnabled = false; // Disable all logs with one line
 ```
+
+### 11. Phase-Based State Machine
+
+The game logic is organized into distinct phases using a state machine pattern. This allows for clear separation of concerns and better control over the game flow.
+
+**Phase Interface**:
+```csharp
+public interface IPhaseState
+{
+    string Name { get; }
+    void Execute();
+}
+```
+
+**Phases**:
+1. **MatchPhaseState** - Detects all matches on the board
+   - Calls `MatchDetector.FindAllMatches()`
+   - Determines positions for creating new bombs (from 4+ matches)
+   - Stores matches in `GameState.CurrentMatches`
+
+2. **DestroyPhaseState** - Destroys matched gems and creates new bombs
+   - Destroys gems from `CurrentMatches` (except those in `DelayedGems`)
+   - Creates new bombs at positions determined in MatchPhase
+   - Calculates score
+
+3. **FillBoardPhaseState** - Makes gems fall and refills empty spaces
+   - Simulates gravity (gems fall down)
+   - Generates new gems for empty cells
+
+4. **StablePhaseState** - Final phase when no matches or movements occur
+   - Marks the board as stable
+   - Triggers delayed actions (e.g., delayed bomb explosions)
+
+**Phase Context**:
+`PhaseContext` manages phase transitions and publishes events:
+
+```csharp
+// Before phase execution
+eventBus.Publish(new PhaseEnteredEventData { Phase = newPhase, ... });
+
+newPhase.Execute();
+
+// After phase execution
+eventBus.Publish(new PhaseExitedEventData { Phase = newPhase, ... });
+```
+
+**Game Loop**:
+```csharp
+do {
+    phaseContext.ExecutePhase(new MatchPhaseState(...));      // Find matches
+    phaseContext.ExecutePhase(new DestroyPhaseState(...));    // Destroy & create bombs
+    phaseContext.ExecutePhase(new FillBoardPhaseState(...));  // Fall & refill
+} while (gameState.HasMatches || gameBoard.IsDirty());
+
+phaseContext.ExecutePhase(new StablePhaseState(...));         // Stable state
+```
+
+**Advantages**:
+- Clear separation of responsibilities
+- Easy to test individual phases
+- Components can react to phase changes via events
+- Extensible - easy to add new phases
+
+### 12. Delayed Bomb Explosions
+
+Bombs have special behavior based on how they enter a match:
+
+**Component Pattern**:
+Bombs use `BombPhaseBehavior` component that reacts to phase events:
+
+```csharp
+public class BombPhaseBehavior : IGemPhaseBehavior
+{
+    // Subscribes to PhaseExitedEventData
+    // Decides when to explode based on phase and context
+}
+```
+
+**Behavior Rules**:
+
+1. **Immediate Explosion** - When a bomb is swapped by the player:
+   - Bomb explodes immediately in `IsSwapProcessed()` method
+   - No delay, standard bomb explosion pattern
+
+2. **Delayed Explosion** - When a bomb is matched automatically (e.g., falling gems form a match):
+   - Matched gems are destroyed immediately
+   - Bomb is added to `GameState.DelayedGems` list
+   - Bomb is **not** destroyed in `DestroyPhaseState` (checked via `DelayedGems.Contains()`)
+   - After all cascades complete and board is stable, bomb explodes in `StablePhaseState`
+
+**Implementation Flow**:
+
+```
+MatchPhaseState.Execute()
+  → Finds matches (bomb in CurrentMatches)
+  → PhaseExitedEventData published
+  
+BombPhaseBehavior.OnPhaseExited(MatchPhaseState)
+  → Checks: was bomb swapped?
+  → If NO: adds bomb to GameState.DelayedGems
+  
+DestroyPhaseState.Execute()
+  → Destroys all gems in CurrentMatches
+  → Skips gems in DelayedGems (bomb survives!)
+  
+[Game loop continues with cascades...]
+  
+StablePhaseState.Execute()
+  → PhaseExitedEventData published
+  
+BombPhaseBehavior.OnPhaseExited(StablePhaseState)
+  → If bomb in DelayedGems: executes SpecialAbility (explodes)
+  → Removes from DelayedGems
+```
+
+**GameState Integration**:
+`GameState` holds shared mutable state across phases:
+- `DelayedGems` - List of gems that should not be destroyed immediately
+- `CurrentMatches` - Gems currently in a match
+- `BombPlacements` - Positions where new bombs should be created
+- `SwapHappened` - Whether current turn started with a swap
+
+**Advantages**:
+- Model (BombSpecialAbility) doesn't need to know about delays
+- View controls all timing and animations
+- Flexible - can add delay behavior to other special gems
+- Clear separation: phases handle timing, components handle behavior
 
 ## Data Flow
 

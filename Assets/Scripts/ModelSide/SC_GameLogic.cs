@@ -9,26 +9,11 @@ public class SC_GameLogic : MonoBehaviour
     private IGemGenerator gemGenerator;
     private MatchDetector matchDetector;
     private IEventBus eventBus;
-
-    // locals
-    private int score = 0;
-    private List<SC_Gem> gemsMarkedForAbilityActivation = new List<SC_Gem>();
-    private bool swapHappened;
-    private Vector2Int lastSwapPos1;
-    private Vector2Int lastSwapPos2;
     
-    public int Score {
-        get => score;
-        set {
-            if (score != value) {
-                eventBus.Publish<ScoreEventData>(new ScoreEventData()
-                {
-                    ScoreOld = score, ScoreNew = value
-                });
-                score = value;
-            }
-        }
-    }
+    // Phase management
+    private PhaseContext phaseContext;
+    private GameState gameState;
+
     
     #region MonoBehaviour
     private void OnEnable()
@@ -36,20 +21,12 @@ public class SC_GameLogic : MonoBehaviour
         if (gemInputHandler != null) {
             gemInputHandler.EventSwipeDetected += OnSwipe;
         }
-
-        if (eventBus != null) {
-            eventBus.Subscribe<SpecialGemsAffectedEventData>(OnSpecialGemAffected);
-        }
     }
 
     private void OnDisable()
     {
         if (gemInputHandler != null) {
             gemInputHandler.EventSwipeDetected -= OnSwipe;
-        }
-
-        if (eventBus != null) {
-            eventBus.Unsubscribe<SpecialGemsAffectedEventData>(OnSpecialGemAffected);
         }
     }
 
@@ -67,14 +44,8 @@ public class SC_GameLogic : MonoBehaviour
         this.matchDetector = matchDetector;
         this.eventBus = eventBus;
         
-        eventBus.Subscribe<SpecialGemsAffectedEventData>(OnSpecialGemAffected);
-    }
-
-    private void OnSpecialGemAffected(SpecialGemsAffectedEventData eventData)
-    {
-        if (eventData.SourceAbilityType == "bomb") {
-            gemsAwaitingActivation.AddRange(eventData.AffectedSpecialGems);
-        }
+        gameState = new GameState(eventBus);
+        phaseContext = new PhaseContext(gameState, gameBoard, eventBus);
     }
     
     #endregion
@@ -85,248 +56,105 @@ public class SC_GameLogic : MonoBehaviour
     {
         return gameBoard.GetGem(_X, _Y);
     }
-
-    private void ScoreCheck(SC_Gem gemToCheck)
-    {
-        Score += gemToCheck.ScoreValue;
-    }
     
     private void OnSwipe(Vector2Int gem1Pos, Vector2Int gem2Pos)
     {
         var gem1 = GetGem(gem1Pos.x, gem1Pos.y);
         var gem2 = GetGem(gem2Pos.x, gem2Pos.y);
         
-        lastSwapPos1 = gem1Pos;
-        lastSwapPos2 = gem2Pos;
+        gameState.LastSwapPos1 = gem1Pos;
+        gameState.LastSwapPos2 = gem2Pos;
         
         gameBoard.SwapGems(gem1Pos, gem2Pos);
 
-        swapHappened = true;
+        gameState.SwapHappened = true;
         
-        CheckMoveCo(gem1, gem2, gem1Pos, gem2Pos);
-    }
-    
-    private void CheckMoveCo(SC_Gem gem1, SC_Gem gem2, Vector2Int gem1Pos, Vector2Int gem2Pos)
-    {
-        FindAllMatches();
-        
-        if (gem1 != null && gem2 != null)
-        {
-            if (!gem1.IsMatch && !gem2.IsMatch && 
-                (gem1.SpecialAbility == null && gem2.SpecialAbility == null))
-            {
-                GameLogger.Log($"[Client] Swap back ({gem1Pos}, {gem2Pos})");
-                SwapBack(gem1Pos, gem2Pos);
-            }
-            else 
-            {
-                if (gem1.SpecialAbility != null && gem2.SpecialAbility != null) {
-                    gameBoard.InvokeBatchStart();
-                    gem1.SpecialAbility.Execute();
-                    gem2.SpecialAbility.Execute();
-                    gameBoard.InvokeBatchEnd();
-                }
-                else {
-                    if (gem1.SpecialAbility != null) {
-                        if (gem1.IsMatch || matchDetector.CanGemsMatch(gem1, gem2)) {
-                            gameBoard.InvokeBatchStart();
-                            gem1.SpecialAbility.Execute();
-                            gameBoard.InvokeBatchEnd();
-                        }
-                        else {
-                            SwapBack(gem1Pos, gem2Pos);
-                        }
-                    }
-
-                    if (gem2.SpecialAbility != null) {
-                        if (gem2.IsMatch || matchDetector.CanGemsMatch(gem1, gem2)) {
-                            gameBoard.InvokeBatchStart();
-                            gem2.SpecialAbility.Execute();
-                            gameBoard.InvokeBatchEnd();
-                        }
-                        else {
-                            SwapBack(gem1Pos, gem2Pos);
-                        }
-                    }
-                }
-
-                DestroyMatches();
-                swapHappened = false;
-            }
+        if (!IsSwapProcessed(gem1, gem2, gem1Pos, gem2Pos)) {
+            GameLogger.Log($"[Client] Swap back ({gem1Pos}, {gem2Pos})");
+            gameBoard.SwapGems(gem2Pos, gem1Pos);
+            gameState.SwapHappened = false;
         }
-    }
-
-    private void SwapBack(Vector2Int gem1Pos, Vector2Int gem2Pos)
-    {
-        gameBoard.InvokeBatchStart();
-        // swap back
-        gameBoard.SwapGems(gem2Pos, gem1Pos);
-        gameBoard.InvokeBatchEnd();
-    }
-
-    private void DestroyMatches()
-    {
-        gameBoard.InvokeBatchStart();
-        
-        // 1. CHECK for 4+ matches BEFORE destruction to know where to place the bomb
-        // (but place the bomb AFTER destruction)
-        //bool shouldPlaceBomb = matchDetector.HasMatchOfFourOrMoreInSwapPosition(lastSwapPos1, lastSwapPos2, out Vector2Int bombPosition);
-        Vector2Int bombPosition;
-        GlobalEnums.GemType bombType = GlobalEnums.GemType.blue;
-        bool shouldPlaceBomb = swapHappened ? 
-            matchDetector.HasMatchOfFourOrMoreInSwapPosition(lastSwapPos1, lastSwapPos2, out bombPosition, out bombType) : 
-            matchDetector.HasMatchOfFourOrMore(out bombPosition, out bombType);
-
-        // TODO: We may form matches here like Match3, Match4, Match5
-        GameLogger.Log($"<color=white>Matches count:{matchDetector.CurrentMatches.Count}</color>");
-        foreach (var match in matchDetector.CurrentMatches) {
-            gameBoard.TryGetGemPos(match, out var gemPos);
-            GameLogger.Log($"<color=yellow>[DELETE] {match} at {gemPos}</color>");
-        }
-        
-        gemsMarkedForAbilityActivation.Clear();
-    
-        for (int i = 0; i < matchDetector.CurrentMatches.Count; i++) {
-            if (matchDetector.CurrentMatches[i] != null) {
-                var gem = matchDetector.CurrentMatches[i];
-            
-                // // Check if gem has ability
-                // if (gem.SpecialAbility != null)
-                // {
-                //     // Mark for activation (do NOT activate immediately!)
-                //     gemsMarkedForAbilityActivation.Add(gem);
-                //     Debug.Log($"<color=orange>Marked gem with ability '{gem.SpecialAbility.AbilityType}' for activation</color>");
-                // }
-                // else
-                {
-                    // Regular gem - remove and count points
-                    ScoreCheck(gem);
-                    if (gameBoard.TryGetGemPos(gem, out var gemPos)) {
-                        GameLogger.Log($"<color=white>Match {gemPos}</color>");
-                        gameBoard.DestroyGem(gemPos);
-                    }
-                }
-            }
-        }
-        gameBoard.InvokeBatchEnd();
-        
-        gameBoard.InvokeBatchStart();
-        
-        // 3. PLACE the bomb at the swap position (now it's empty after destruction)
-        if (shouldPlaceBomb)
-        {
-            var bombGem = SC_GameVariables.Instance.bomb.Clone();
-            bombGem.AddComponent(new ColoredBombComponent(bombType));
-            bombGem.SpecialAbility = SpecialAbilityFactory.CreateAbility(
-                GlobalEnums.GemType.bomb,
-                gameBoard,
-                bombGem,
-                eventBus,
-                matchDetector
-            );
-            
-            gameBoard.SetGem(bombPosition.x, bombPosition.y, bombGem, GlobalEnums.GemSpawnType.Instant);
-            GameLogger.Log($"<color=red>BOMB placed at ({bombPosition.x}, {bombPosition.y}) after 4+ match!</color>");
-        }
-        gameBoard.InvokeBatchEnd();
-        
-        DecreaseRowCo();
-        
-    }
-
-    private List<SC_Gem> gemsAwaitingActivation = new();
-    
-    private void DecreaseRowCo()
-    {
-        gameBoard.InvokeBatchStart();
-        var nullCounter = 0;
-        for (var x = 0; x < gameBoard.Width; x++)
-        {
-            for (var y = 0; y < gameBoard.Height; y++)
-            {
-                var curGem = gameBoard.GetGem(x, y);
-                if (curGem == null) 
-                {
-                    nullCounter++;
-                }
-                else if (nullCounter > 0) 
-                {
-                    gameBoard.MoveGem(new Vector2Int(x, y), new Vector2Int(x, y - nullCounter));
-                }
-            }
-            nullCounter = 0;
-        }
-        gameBoard.InvokeBatchEnd();
-
-        if (gemsAwaitingActivation.Count > 0) {
-            gameBoard.InvokeBatchStart();
-            foreach (var gemAwaitingActivation in gemsAwaitingActivation) {
-                gemAwaitingActivation.SpecialAbility.Execute();
-            }
-            gameBoard.InvokeBatchEnd();
-            
-            gemsAwaitingActivation.Clear();
-        }
-
-        // TODO: Fillboard command ? 
-        FilledBoardCo();
-    }
-
-    private void FilledBoardCo()
-    {
-        gameBoard.InvokeBatchStart();
-        RefillBoard();
-        gameBoard.InvokeBatchEnd();
-        
-        if (gemsMarkedForAbilityActivation.Count > 0)
-        {
-            gameBoard.InvokeBatchStart();
-        
-            // Create a copy of the list, as Execute() may change gem positions
-            var gemsToActivate = new List<SC_Gem>(gemsMarkedForAbilityActivation);
-            gemsMarkedForAbilityActivation.Clear();
-        
-            foreach (var gem in gemsToActivate)
-            {
-                if (gem != null && gem.SpecialAbility != null)
-                {
-                    // Check that the gem is still on the board (not removed during fall)
-                    if (gameBoard.TryGetGemPos(gem, out var gemPos))
-                    {
-                        GameLogger.Log($"<color=orange>Activating ability '{gem.SpecialAbility.AbilityType}' for gem at ({gemPos.x}, {gemPos.y})</color>");
-                        gem.SpecialAbility.Execute();
-                    }
-                }
-            }
-        
-            gameBoard.InvokeBatchEnd();
-        }
-    
-        // Check for new matches
-        matchDetector.FindAllMatches();
-        if (matchDetector.CurrentMatches.Count > 0) {
-            DestroyMatches();
-        }
-    }
-    private void RefillBoard()
-    {
-        for (int x = 0; x < gameBoard.Width; x++)
-        {
-            for (int y = 0; y < gameBoard.Height; y++)
-            {
-                SC_Gem _curGem = gameBoard.GetGem(x,y);
-                if (_curGem == null) {
-                    var newGem = gemGenerator.GenerateGem(new Vector2Int(x, y));
-                    gameBoard.SetGem(x, y, newGem, GlobalEnums.GemSpawnType.FallFromTop);
-                }
-            }
+        else {
+            ProcessMatches();
         }
     }
     
-    public void FindAllMatches()
+    private bool IsSwapProcessed(SC_Gem gem1, SC_Gem gem2, Vector2Int gem1Pos, Vector2Int gem2Pos)
     {
         matchDetector.FindAllMatches();
-    }
 
+        var canGemsMatch = matchDetector.CanGemsMatch(gem1, gem2);
+        var gem1Matches = gem1.IsMatch || canGemsMatch;
+        var gem2Matches = gem2.IsMatch || canGemsMatch;
+        
+        var gem1HasAbility = gem1.SpecialAbility != null;
+        var gem2HasAbility = gem2.SpecialAbility != null;
+        var bothHaveAbilities = gem1HasAbility && gem2HasAbility;
+        
+        if (!gem1Matches && !gem2Matches) {
+            if (!bothHaveAbilities) {
+                return false;
+            }
+        }
+        
+        if (gem1HasAbility) {
+            if (gem1Matches) {
+                gameBoard.InvokeBatchStart();
+                gem1.SpecialAbility.Execute();
+                gameBoard.InvokeBatchEnd();
+            }
+        }
+
+        if (gem2HasAbility) {
+            if (gem2Matches) {
+                gameBoard.InvokeBatchStart();
+                gem2.SpecialAbility.Execute();
+                gameBoard.InvokeBatchEnd();
+            }
+        }
+
+        if (!gem1Matches && !gem2Matches) {
+            gameBoard.InvokeBatchStart();
+            gem1.SpecialAbility.Execute();
+            gem2.SpecialAbility.Execute();
+            gameBoard.InvokeBatchEnd();
+        }
+        
+        return true;
+    }
+    
+    private void ProcessMatches()
+    {
+        do
+        {
+            gameBoard.SetDirty(false);
+            
+            // Match
+            var matchPhase = new MatchPhaseState(matchDetector, gameState);
+            phaseContext.ExecutePhase(matchPhase);
+            // OnExitState => BombPhaseBehaviour - mark bombs as delayed
+            
+            // Destroy
+            var destroyPhase = new DestroyPhaseState(gameBoard, matchDetector, eventBus, gameState);
+            phaseContext.ExecutePhase(destroyPhase);
+            
+            // FillBoard
+            var fillBoardPhase = new FillBoardPhaseState(gameBoard, gemGenerator);
+            phaseContext.ExecutePhase(fillBoardPhase);
+            
+        } while (gameState.HasMatches || gameBoard.IsDirty());
+        
+        // StablePhase
+        var stablePhase = new StablePhaseState(gameState);
+        phaseContext.ExecutePhase(stablePhase);
+        // OnExitState => BombPhaseBehaviour - destroy delayed bombs
+
+        if (gameBoard.IsDirty()) {
+            ProcessMatches();
+        }
+        
+        gameState.SwapHappened = false;
+    }
+    
     #endregion
 }

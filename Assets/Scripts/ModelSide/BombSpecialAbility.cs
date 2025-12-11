@@ -16,12 +16,14 @@ public class BombSpecialAbility : IGemSpecialAbility
     private Vector2Int gemPos;
     private List<SC_Gem> affectedGems;
     private List<Vector2Int> affectedPositions;
+    private GameState gameState;
     
     public BombSpecialAbility(
         GameBoard gameBoard,
         MatchDetector matchDetector,
         SC_Gem gem, 
         IEventBus eventBus,
+        GameState gameState,
         float neighborDestroyDelay = 0.3f,
         float bombDestroyDelay = 0.2f)
     {
@@ -31,6 +33,7 @@ public class BombSpecialAbility : IGemSpecialAbility
         this.neighborDestroyDelay = neighborDestroyDelay;
         this.bombDestroyDelay = bombDestroyDelay;
         this.gem = gem;
+        this.gameState = gameState;
     }
     
     public void Execute()
@@ -43,9 +46,16 @@ public class BombSpecialAbility : IGemSpecialAbility
         var specialGems = affectedGems.Where(t => t.SpecialAbility != null && t != gem).ToList();
         var filteredGems = affectedGems.Except(specialGems).ToList();
 
-        var specialGemsAffectedEventData =
-            new SpecialGemsAffectedEventData(specialGems, AbilityType);
-        eventBus.Publish(specialGemsAffectedEventData);
+        // var specialGemsAffectedEventData =
+        //     new SpecialGemsAffectedEventData(specialGems, AbilityType);
+        // eventBus.Publish(specialGemsAffectedEventData);
+
+        // TODO: I believe this is temporary solution
+        foreach (var specialGem in specialGems) {
+            if (!gameState.DelayedGems.Contains(specialGem)) {
+                gameState.DelayedGems.Add(specialGem);
+            }
+        }
         
         // 2. Publish event for presenter
         var eventData = new BombExplosionEventData(

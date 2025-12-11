@@ -14,6 +14,7 @@ public class GameBoard : IGameBoardReader
     private int height = 0;
     private int width = 0;
     private SC_Gem[,] allGems;
+    private bool dirty;
 
     // to move outside
     private int score = 0; // TODO: Move to other module
@@ -57,6 +58,8 @@ public class GameBoard : IGameBoardReader
 
         (allGems[fromPos.x, fromPos.y], allGems[toPos.x, toPos.y]) =
             (allGems[toPos.x, toPos.y], allGems[fromPos.x, fromPos.y]);
+
+        dirty = true;
     }
 
     public void MoveGem(Vector2Int fromPos, Vector2Int toPos)
@@ -67,6 +70,8 @@ public class GameBoard : IGameBoardReader
 
         allGems[fromPos.x, fromPos.y] = null;
         allGems[toPos.x, toPos.y] = gem;
+
+        dirty = true;
     }
 
     public void DestroyGem(Vector2Int gemPos)
@@ -74,11 +79,15 @@ public class GameBoard : IGameBoardReader
         EventGemDestroy?.Invoke(gemPos);
 
         allGems[gemPos.x, gemPos.y] = null;
+
+        dirty = true;
     }
 
     public void SetGem(int x, int y, SC_Gem gem, GlobalEnums.GemSpawnType gemSpawnType)
     {
         allGems[x, y] = gem;
+
+        dirty = true;
 
         if (gem != null) {
             EventGemSpawned?.Invoke(new Vector2Int(x, y), gemSpawnType);
@@ -98,5 +107,15 @@ public class GameBoard : IGameBoardReader
     public void InvokeBatchEnd()
     {
         EventBatchOperationEnded?.Invoke();
+    }
+
+    public void SetDirty(bool flag)
+    {
+        dirty = flag;
+    }
+    
+    public bool IsDirty()
+    {
+        return dirty;
     }
 }

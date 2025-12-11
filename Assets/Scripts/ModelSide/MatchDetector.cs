@@ -7,6 +7,7 @@ public class MatchDetector
 {
     private readonly IGameBoardReader gameBoard;
     private List<SC_Gem> currentMatches = new();
+    
     // Field for storing gems with abilities that need to be activated
     private List<SC_Gem> gemsWithAbilitiesToActivate = new();
 
@@ -96,75 +97,124 @@ public class MatchDetector
         return false;
     }
     
-    public bool HasMatchOfFourOrMore(out Vector2Int bombPosition, out GlobalEnums.GemType matchedGemType)
-    {
-        matchedGemType = GlobalEnums.GemType.blue;
-        bombPosition = Vector2Int.zero;
-        List<MatchGroup> matchGroups = FindMatchesOfFourOrMore();
-
-        if (matchGroups.Count == 0)
-            return false;
-
-        // Find the largest match group
-        MatchGroup largestGroup = matchGroups[0];
-        foreach (var group in matchGroups)
-        {
-            if (group.Count > largestGroup.Count)
-            {
-                largestGroup = group;
-            }
-        }
-
-        // Choose bomb position: take first position from the group (guaranteed to exist)
-        // This is similar to how swap position works - it's a real position from the match
-        if (largestGroup.Positions.Count > 0)
-        {
-            bombPosition = largestGroup.Positions[0];
-            var gem = gameBoard.GetGem(bombPosition.x, bombPosition.y);
-            matchedGemType = gem.Type;
-            return true;
-        }
-
-        return false;
-    }
-
+    // public bool HasMatchOfFourOrMore(out Vector2Int bombPosition, out GlobalEnums.GemType matchedGemType)
+    // {
+    //     matchedGemType = GlobalEnums.GemType.blue;
+    //     bombPosition = Vector2Int.zero;
+    //     List<MatchGroup> matchGroups = FindMatchesOfFourOrMore();
+    //
+    //     if (matchGroups.Count == 0)
+    //         return false;
+    //
+    //     // Find the largest match group
+    //     MatchGroup largestGroup = matchGroups[0];
+    //     foreach (var group in matchGroups)
+    //     {
+    //         if (group.Count > largestGroup.Count)
+    //         {
+    //             largestGroup = group;
+    //         }
+    //     }
+    //
+    //     // Choose bomb position: take first position from the group (guaranteed to exist)
+    //     // This is similar to how swap position works - it's a real position from the match
+    //     if (largestGroup.Positions.Count > 0)
+    //     {
+    //         bombPosition = largestGroup.Positions[0];
+    //         var gem = gameBoard.GetGem(bombPosition.x, bombPosition.y);
+    //         matchedGemType = gem.Type;
+    //         return true;
+    //     }
+    //
+    //     return false;
+    // }
+    //
 
     /// <summary>
     /// Checks if the swap position participates in a match of 4+ (without placing a bomb)
     /// </summary>
     /// <returns>true if a match of 4+ is found, and returns the position for the bomb</returns>
-    public bool HasMatchOfFourOrMoreInSwapPosition(Vector2Int swapPos1, Vector2Int swapPos2,
-        out Vector2Int bombPosition, out GlobalEnums.GemType matchedGemType)
+    
+    // public bool HasMatchOfFourOrMoreInSwapPosition(Vector2Int swapPos1, Vector2Int swapPos2,
+    //     out Vector2Int bombPosition, out GlobalEnums.GemType matchedGemType)
+    // {
+    //     matchedGemType = GlobalEnums.GemType.blue;
+    //     bombPosition = Vector2Int.zero;
+    //     List<MatchGroup> matchGroups = FindMatchesOfFourOrMore();
+    //
+    //     if (matchGroups.Count == 0)
+    //         return false;
+    //
+    //     int maxGroupSize = 0;
+    //
+    //     foreach (var group in matchGroups) {
+    //         // Check if the group contains the swap position
+    //         bool containsPos1 = group.Positions.Contains(swapPos1);
+    //         bool containsPos2 = group.Positions.Contains(swapPos2);
+    //
+    //         if (containsPos1 || containsPos2) {
+    //             // Select the swap position with the largest group
+    //             if (containsPos1 && group.Count > maxGroupSize) {
+    //                 bombPosition = swapPos1;
+    //                 maxGroupSize = group.Count;
+    //             }
+    //             else if (containsPos2 && group.Count > maxGroupSize) {
+    //                 bombPosition = swapPos2;
+    //                 maxGroupSize = group.Count;
+    //             }
+    //         }
+    //     }
+    //
+    //     matchedGemType = gameBoard.GetGem(bombPosition.x, bombPosition.y).Type;
+    //     return maxGroupSize >= 4;
+    // }
+    
+    /// <summary>
+    /// Returns all match groups of 4+ with bomb positions and gem types
+    /// For groups containing swap positions, uses swap position for bomb placement
+    /// </summary>
+    public List<(Vector2Int bombPosition, GlobalEnums.GemType gemType)> GetAllMatchGroupsOfFourOrMore(
+        Vector2Int? swapPos1 = null, Vector2Int? swapPos2 = null)
     {
-        matchedGemType = GlobalEnums.GemType.blue;
-        bombPosition = Vector2Int.zero;
+        var result = new List<(Vector2Int, GlobalEnums.GemType)>();
         List<MatchGroup> matchGroups = FindMatchesOfFourOrMore();
-
-        if (matchGroups.Count == 0)
-            return false;
-
-        int maxGroupSize = 0;
-
-        foreach (var group in matchGroups) {
-            // Check if the group contains the swap position
-            bool containsPos1 = group.Positions.Contains(swapPos1);
-            bool containsPos2 = group.Positions.Contains(swapPos2);
-
-            if (containsPos1 || containsPos2) {
-                // Select the swap position with the largest group
-                if (containsPos1 && group.Count > maxGroupSize) {
-                    bombPosition = swapPos1;
-                    maxGroupSize = group.Count;
-                }
-                else if (containsPos2 && group.Count > maxGroupSize) {
-                    bombPosition = swapPos2;
-                    maxGroupSize = group.Count;
-                }
+    
+        foreach (var group in matchGroups)
+        {
+            if (group.Positions.Count == 0)
+                continue;
+            
+            Vector2Int bombPos;
+        
+            // Если swap произошел, проверяем содержит ли группа swap позиции
+            if (swapPos1.HasValue && swapPos2.HasValue)
+            {
+                bool containsPos1 = group.Positions.Contains(swapPos1.Value);
+                bool containsPos2 = group.Positions.Contains(swapPos2.Value);
+            
+                if (containsPos1)
+                    bombPos = swapPos1.Value;
+                else if (containsPos2)
+                    bombPos = swapPos2.Value;
+                else
+                    bombPos = group.Positions[0]; // Группа не содержит swap
             }
+            else
+            {
+                bombPos = group.Positions[0]; // Нет swap - берем первую позицию
+            }
+        
+            var gem = gameBoard.GetGem(bombPos.x, bombPos.y);
+            if (gem == null)
+            {
+                GameLogger.LogError($"GetAllMatchGroupsOfFourOrMore: Gem at {bombPos} is null! Method should be called BEFORE DestroyMatches.");
+                continue;
+            }
+        
+            result.Add((bombPos, gem.Type));
         }
-
-        matchedGemType = gameBoard.GetGem(bombPosition.x, bombPosition.y).Type;
-        return maxGroupSize >= 4;
+    
+        return result;
     }
 
     /// <summary>
