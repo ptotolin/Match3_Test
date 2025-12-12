@@ -58,12 +58,31 @@ public class MoveGemCommand : IGameBoardCommand
         while (timer < duration) {
             timer += Time.deltaTime;
             var normalizedTime = Mathf.Clamp01(timer / duration);
-            gemViewTransform.position = startPos + normalizedTime * moveVec;
+            var easedTime = EaseOutBack(normalizedTime);
+            gemViewTransform.position = startPos + easedTime * moveVec;
             await Task.Yield();
         }
         GameLogger.Log($"===== Ended executing ======");
 
         gemViewTransform.position = destinationPoint;
         
+    }
+    
+    private float EaseOutQuad(float t)
+    {
+        return 1f - (1f - t) * (1f - t);
+    }
+
+    private float EaseOutCubic(float t)
+    {
+        return 1f - Mathf.Pow(1f - t, 3f);
+    }
+    
+    private float EaseOutBack(float t)
+    {
+        const float c1 = 1.70158f;
+        const float c3 = c1 + 1f;
+    
+        return 1f + c3 * Mathf.Pow(t - 1f, 3f) + c1 * Mathf.Pow(t - 1f, 2f);
     }
 }
