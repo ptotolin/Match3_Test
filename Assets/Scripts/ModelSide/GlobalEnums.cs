@@ -1,6 +1,4 @@
-﻿using UnityEngine;
-
-public class GlobalEnums : MonoBehaviour
+﻿public class GlobalEnums 
 {
     public enum GemType
     {

@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using UnityEngine;
 
+// TODO: Remove that class
 public class GameBoardCommandsExecutor
 {
     public event Action EventLastCommandExecuted;

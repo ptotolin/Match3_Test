@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using Zenject;
 
 public class GemInputHandler : MonoBehaviour
 {
@@ -19,7 +20,7 @@ public class GemInputHandler : MonoBehaviour
     private Camera mainCamera;
     private SC_Gem firstTouchGem;
     
-
+    [Inject]
     public void Initialize(GameBoard gameboard, GameBoardPresenter gameBoardPresenter)
     {
         this.gameboard = gameboard;

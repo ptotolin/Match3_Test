@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
+using Zenject;
 
 public class SC_GameLogic : MonoBehaviour
 {
@@ -30,22 +30,24 @@ public class SC_GameLogic : MonoBehaviour
         }
     }
 
+    [Inject]
     public void Initialize(
         GemInputHandler gemInputHandler, 
         GameBoard gameBoard, 
         IGemGenerator gemGenerator, 
         MatchDetector matchDetector,
-        IEventBus eventBus)
+        IEventBus eventBus,
+        GameState gameState,
+        PhaseContext phaseContext)
     {
         this.gemInputHandler = gemInputHandler;
-        this.gemInputHandler.EventSwipeDetected += OnSwipe;
+        //this.gemInputHandler.EventSwipeDetected += OnSwipe;
         this.gameBoard = gameBoard;
         this.gemGenerator = gemGenerator;
         this.matchDetector = matchDetector;
         this.eventBus = eventBus;
-        
-        gameState = new GameState(eventBus);
-        phaseContext = new PhaseContext(gameState, gameBoard, eventBus);
+        this.gameState = gameState;
+        this.phaseContext = phaseContext;
     }
     
     #endregion

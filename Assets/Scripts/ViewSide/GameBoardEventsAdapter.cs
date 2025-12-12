@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using UnityEngine;
 
 public class GameBoardEventsAdapter
 { 
@@ -74,27 +73,6 @@ public class GameBoardEventsAdapter
             GameLogger.Log($"<color=cyan>Executing global command {globalCommand.Name}. Details: {globalCommand.Details}</color>");
             await globalCommand.ExecuteAsync();
         }
-        
-        // 2. Execute per-column tasks
-        // List<Task> commandsToExecuteInParallel = new();
-        // while (currentRound.ColumnCommands.Count > 0) {
-        //     for (var col = 0; col < gameBoard.Width; ++col) {
-        //         if (currentRound.ColumnCommands.TryGetValue(col, out var commandsInColumn)) {
-        //             var command = commandsInColumn.Dequeue();
-        //             if (commandsInColumn.Count == 0) {
-        //                 currentRound.ColumnCommands.Remove(col);
-        //             }
-        //
-        //             Debug.Log(
-        //                 $"<color=cyan>Executing column command {command.Name}. Details: {command.Details}</color>");
-        //             commandsToExecuteInParallel.Add(command.ExecuteAsync());
-        //         }
-        //     }
-        //
-        //     await Task.WhenAll(commandsToExecuteInParallel);
-        //     commandsToExecuteInParallel.Clear();
-        //     Debug.Log($"<color=cyan>Finished executing parallel commands. batchRounds = {batchRounds.Count} </color>");
-        // }
 
         // 2. Execute per-column tasks
         List<Task> allColumnTasks = new();

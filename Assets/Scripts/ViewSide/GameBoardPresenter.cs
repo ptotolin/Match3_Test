@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Zenject;
 
 public class GameBoardPresenter : MonoBehaviour
 {
@@ -25,6 +26,7 @@ public class GameBoardPresenter : MonoBehaviour
         UnsubscribeFromEvents();
     }
 
+    [Inject]
     public void Initialize(GameBoard gameboard, GameBoardEventsAdapter gameBoardEventsAdapter, IEventBus eventBus)
     {
         this.gameboard = gameboard;
@@ -44,10 +46,6 @@ public class GameBoardPresenter : MonoBehaviour
         }
         
         gameboard.InvokeBatchEnd();
-        
-        // HACK
-        var gameScreen = FindObjectOfType<GameScreen>();
-        gameScreen.Initialize(eventBus);
     }
 
     public void RegisterGemView(SC_Gem gem, SC_GemView gemView)

@@ -1,6 +1,7 @@
 using System.Collections;
 using TMPro;
 using UnityEngine;
+using Zenject;
 
 public class GameScreen : MonoBehaviour
 {
@@ -27,6 +28,7 @@ public class GameScreen : MonoBehaviour
         }
     }
 
+    [Inject]
     public void Initialize(IEventBus eventBus)
     {
         this.eventBus = eventBus;
