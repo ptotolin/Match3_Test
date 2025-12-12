@@ -19,7 +19,9 @@ The project uses **Model-View-Presenter (MVP)** architecture with elements of **
 ```
 Assets/Scripts/
 ├── Core/                          # Common infrastructure components
-│   ├── GameBootstrap.cs          # Entry point, Dependency Injection
+│   ├── ProjectInstaller.cs       # Zenject installer for project-wide dependencies
+│   ├── SceneInstaller.cs         # Zenject installer for scene-specific dependencies
+│   ├── GameBoardInitializer.cs   # Initial game board setup
 │   ├── EventBus.cs               # Event system for communication
 │   ├── GameLogger.cs             # Centralized logging
 │   ├── SC_GameVariables.cs       # Game configuration (needs optimization)
@@ -184,25 +186,20 @@ interface IEventBus
 - Model publishes ability events
 - Presenter subscribes and creates visual effects
 
-### 7. Dependency Injection via GameBootstrap
+### 7. Dependency Injection via Zenject
 
-All dependencies are created and configured in `GameBootstrap`:
+The project uses **Zenject** (Extenject) for Dependency Injection, replacing the previous manual dependency wiring in `GameBootstrap`.
 
-```csharp
-// Create all components
-gameBoard = new GameBoard(width, height);
-matchDetector = new MatchDetector(gameBoard);
-eventBus = new EventBus();
+**Dependency Registration**:
 
-// Initialize with dependencies
-gameLogic.Initialize(..., eventBus);
-gameBoardPresenter.Initialize(gameBoard, adapter, eventBus);
-```
+- **ProjectInstaller** (`ProjectInstaller.cs`) - Project-wide dependencies:
+  - `GameLogger` configuration
 
-**Advantages**:
-- Centralized dependency management
-- Easy to test (can replace dependencies)
-- Clear entry point
+- **SceneInstaller** (`SceneInstaller.cs`) - Scene-specific dependencies:
+  - Game services: `GameBoard`, `GameState`, `PhaseContext`, `MatchDetector`, `IGemGenerator`, `IEventBus`, `GameBoardEventsAdapter`
+  - MonoBehaviour components from prefabs: `SC_GameLogic`, `GameBoardPresenter`, `GemInputHandler`
+  - Scene objects: `GameScreen`
+  - `GameBoardInitializer` (with `.NonLazy()`) - initializes the game board on startup
 
 ### 8. Service Classes
 
@@ -395,7 +392,8 @@ EventBus is used for communication between abilities (Model) and visualization (
 
 ## Known Issues / TODO
 
-- **SC_GameVariables** - Needs optimization (currently uses Singleton pattern, should be refactored to use Dependency Injection)
+- **SC_GameVariables** - Needs optimization (currently uses Singleton pattern, should be refactored to use Dependency Injection via Zenject)
+- **GameBootstrap** - Legacy entry point, mostly commented out after Zenject migration (can be removed)
 
 ## Extension Possibilities
 
@@ -408,4 +406,5 @@ EventBus is used for communication between abilities (Model) and visualization (
 
 - Unity (MonoBehaviour, Transform, Vector2Int, etc.)
 - System.Threading.Tasks (for async/await commands)
+- Zenject (Extenject) - Dependency Injection framework
 
