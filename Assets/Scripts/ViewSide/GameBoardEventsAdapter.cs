@@ -103,7 +103,8 @@ public class GameBoardEventsAdapter
         for (var col = 0; col < gameBoard.Width; ++col) {
             if (currentRound.ColumnCommands.TryGetValue(col, out var commandsInColumn) && commandsInColumn.Count > 0) {
                 // Create a task for this column that will launch all commands with delays
-                var columnTask = ExecuteColumnWithStagger(commandsInColumn, 0.1f);
+                float columnStartDelay = col * 0.05f;
+                var columnTask = ExecuteColumnWithStagger(commandsInColumn, 0.1f, columnStartDelay);
                 allColumnTasks.Add(columnTask);
             }
         }
@@ -121,10 +122,14 @@ public class GameBoardEventsAdapter
         }
     }
 
-    private async Task ExecuteColumnWithStagger(Queue<IGameBoardCommand> commands, float staggerDelay)
+    private async Task ExecuteColumnWithStagger(Queue<IGameBoardCommand> commands, float staggerDelay, float columnStartDelay)
     {
         List<Task> columnCommands = new();
         int commandIndex = 0;
+        
+        if (columnStartDelay > 0) {
+            await new DelayCommand(columnStartDelay).ExecuteAsync();
+        }
     
         // Create all tasks at once (with start delays)
         foreach (var command in commands)

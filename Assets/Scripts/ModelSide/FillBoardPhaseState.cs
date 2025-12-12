@@ -19,9 +19,6 @@ public class FillBoardPhaseState : IPhaseState
     {
         gameBoard.InvokeBatchStart();
         DecreaseRows(gameBoard);
-        gameBoard.InvokeBatchEnd();
-        
-        gameBoard.InvokeBatchStart();
         RefillBoard(gameBoard, gemGenerator);
         gameBoard.InvokeBatchEnd();
     }
